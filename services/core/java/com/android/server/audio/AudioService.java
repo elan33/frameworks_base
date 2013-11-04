@@ -627,9 +627,9 @@ public class AudioService extends IAudioService.Stub
     // If absolute volume is supported in AVRCP device
     private boolean mAvrcpAbsVolSupported = false;
 
-    private static Long mLastDeviceConnectMsgTime = new Long(0);
-
+    private boolean mLinkNotificationWithVolume;
     private final boolean mVoiceCapable;
+    private static Long mLastDeviceConnectMsgTime = new Long(0);
 
     private NotificationManager mNm;
     private AudioManagerInternal.RingerModeDelegate mRingerModeDelegate;
@@ -793,7 +793,6 @@ public class AudioService extends IAudioService.Stub
         mVoiceCapable = context.getResources().getBoolean(
                 com.android.internal.R.bool.config_voice_capable);
 
-
         createAudioSystemThread();
 
         AudioSystem.setErrorCallback(mAudioSystemCallback);
@@ -816,6 +815,10 @@ public class AudioService extends IAudioService.Stub
         // the mcc is read by onConfigureSafeVolume()
         mSafeMediaVolumeIndex = mContext.getResources().getInteger(
                 com.android.internal.R.integer.config_safe_media_volume_index) * 10;
+
+        // read this in before readPersistedSettings() because updateStreamVolumeAlias needs it
+        mLinkNotificationWithVolume = Settings.Secure.getInt(mContext.getContentResolver(),
+                Settings.Secure.VOLUME_LINK_NOTIFICATION, 1) == 1;
 
         mUseFixedVolume = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_useFixedVolume);
@@ -1222,7 +1225,12 @@ public class AudioService extends IAudioService.Stub
         mStreamVolumeAlias[AudioSystem.STREAM_ACCESSIBILITY] = a11yStreamAlias;
 
         if (mVoiceCapable) {
-            mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] = AudioSystem.STREAM_RING;
+            if (mLinkNotificationWithVolume) {
+                mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] = AudioSystem.STREAM_RING;
+            } else {
+                mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] =
+                        AudioSystem.STREAM_NOTIFICATION;
+            }
         }
 
         if (updateVolumes && mStreamStates != null) {
@@ -1428,6 +1436,9 @@ public class AudioService extends IAudioService.Stub
             sendEncodedSurroundMode(cr, "readPersistedSettings");
             sendEnabledSurroundFormats(cr, true);
         }
+
+        mLinkNotificationWithVolume = Settings.Secure.getInt(cr,
+                Settings.Secure.VOLUME_LINK_NOTIFICATION, 1) == 1;
 
         mMuteAffectedStreams = System.getIntForUser(cr,
                 System.MUTE_STREAMS_AFFECTED, AudioSystem.DEFAULT_MUTE_STREAMS_AFFECTED,
@@ -5768,6 +5779,8 @@ public class AudioService extends IAudioService.Stub
                 Settings.Global.DOCK_AUDIO_MEDIA_ENABLED), false, this);
             mContentResolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.MASTER_MONO), false, this);
+            mContentResolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.Secure.VOLUME_LINK_NOTIFICATION), false, this);
 
             mEncodedSurroundMode = Settings.Global.getInt(
                     mContentResolver, Settings.Global.ENCODED_SURROUND_OUTPUT,
@@ -5800,6 +5813,14 @@ public class AudioService extends IAudioService.Stub
                 updateMasterMono(mContentResolver);
                 updateEncodedSurroundOutput();
                 sendEnabledSurroundFormats(mContentResolver, mSurroundModeChanged);
+
+                boolean linkNotificationWithVolume = Settings.Secure.getInt(mContentResolver,
+                        Settings.Secure.VOLUME_LINK_NOTIFICATION, 1) == 1;
+                if (linkNotificationWithVolume != mLinkNotificationWithVolume) {
+                    mLinkNotificationWithVolume = linkNotificationWithVolume;
+                    createStreamStates();
+                    updateStreamVolumeAlias(true, TAG);
+                }
             }
         }
 
