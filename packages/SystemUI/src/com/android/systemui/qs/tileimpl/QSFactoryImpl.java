@@ -50,7 +50,15 @@ import com.android.systemui.qs.tiles.NfcTile;
 import com.android.systemui.qs.tiles.NightDisplayTile;
 import com.android.systemui.qs.tiles.RotationLockTile;
 import com.android.systemui.qs.tiles.ScreenshotTile;
+<<<<<<< HEAD
 import com.android.systemui.qs.tiles.ScreenrecordTile;
+=======
+import com.android.systemui.qs.tiles.CalcTile;
+import com.android.systemui.qs.tiles.SmartPixelsTile;
+import com.android.systemui.qs.tiles.SoundTile;
+import com.android.systemui.qs.tiles.SleepScreenTile;
+import com.android.systemui.qs.tiles.SyncTile;
+>>>>>>> e246b3e... Add SleepScreen QS Tile (PowerMenu on longpress)
 import com.android.systemui.qs.tiles.UsbTetherTile;
 import com.android.systemui.qs.tiles.UserTile;
 import com.android.systemui.qs.tiles.VolumeTile;
@@ -132,6 +140,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new ANBITile(mHost);
             case "volume_panel":
                 return new VolumeTile(mHost);
+            case "sleepscreen":
+                return new SleepScreenTile(mHost);
         }
         // Intent tiles.
         if (tileSpec.startsWith(IntentTile.PREFIX)) return IntentTile.create(mHost, tileSpec);
