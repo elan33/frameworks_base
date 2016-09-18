@@ -49,6 +49,7 @@ import com.android.systemui.qs.tiles.LocationTile;
 import com.android.systemui.qs.tiles.NfcTile;
 import com.android.systemui.qs.tiles.NightDisplayTile;
 import com.android.systemui.qs.tiles.RotationLockTile;
+<<<<<<< HEAD
 import com.android.systemui.qs.tiles.ScreenshotTile;
 <<<<<<< HEAD
 import com.android.systemui.qs.tiles.ScreenrecordTile;
@@ -60,6 +61,9 @@ import com.android.systemui.qs.tiles.SleepScreenTile;
 import com.android.systemui.qs.tiles.SyncTile;
 >>>>>>> e246b3e... Add SleepScreen QS Tile (PowerMenu on longpress)
 import com.android.systemui.qs.tiles.UsbTetherTile;
+=======
+import com.android.systemui.qs.tiles.SoundTile;
+>>>>>>> a321a22... Add Sound tile to Quick Settings
 import com.android.systemui.qs.tiles.UserTile;
 import com.android.systemui.qs.tiles.VolumeTile;
 import com.android.systemui.qs.tiles.WifiTile;
@@ -142,6 +146,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new VolumeTile(mHost);
             case "sleepscreen":
                 return new SleepScreenTile(mHost);
+            case "sound":
+                return new SoundTile(mHost);
         }
         // Intent tiles.
         if (tileSpec.startsWith(IntentTile.PREFIX)) return IntentTile.create(mHost, tileSpec);
