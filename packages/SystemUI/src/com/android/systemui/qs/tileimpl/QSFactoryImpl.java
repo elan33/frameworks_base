@@ -136,6 +136,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new SoundTile(mHost);
             case "cpuinfo":
                 return new CPUInfoTile(mHost);
+            case "sync":
+                return new SyncTile(mHost);
         }
         // Intent tiles.
         if (tileSpec.startsWith(IntentTile.PREFIX)) return IntentTile.create(mHost, tileSpec);
