@@ -4375,6 +4375,15 @@ public final class Settings {
                 ANY_INTEGER_VALIDATOR;
 
         /**
+         * Indicates whether ANBI (Accidental navigation button interaction) is enabled.
+         *
+         * @hide
+         */
+        public static final String ANBI_ENABLED_OPTION = "anbi_enabled_option";
+
+        /**
+         * whether to enable or disable vibration on succesful fingerprint auth
+         *
          * @hide
          */
         public static final String STATUSBAR_BATTERY_BAR_ENABLE_CHARGING_COLOR =
