@@ -26,6 +26,13 @@ import com.android.systemui.qs.external.CustomTile;
 import com.android.systemui.qs.tiles.BaikalOSExtrasTile;
 import com.android.systemui.qs.tiles.AdbOverNetworkTile;
 import com.android.systemui.qs.tiles.AirplaneModeTile;
+<<<<<<< HEAD
+=======
+import com.android.systemui.qs.tiles.AmbientDisplayTile;
+import com.android.systemui.qs.tiles.AmbientPlayTile;
+import com.android.systemui.qs.tiles.ANBITile;
+import com.android.systemui.qs.tiles.AODTile;
+>>>>>>> a69ad0c... base: Quick Settings: Add Accidental touch tile
 import com.android.systemui.qs.tiles.BatterySaverTile;
 import com.android.systemui.qs.tiles.BluetoothTile;
 import com.android.systemui.qs.tiles.CaffeineTile;
@@ -120,6 +127,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new AdbOverNetworkTile(mHost);
             case "scr":
                 return new ScreenrecordTile(mHost);
+            case "anbi":
+                return new ANBITile(mHost);
         }
         // Intent tiles.
         if (tileSpec.startsWith(IntentTile.PREFIX)) return IntentTile.create(mHost, tileSpec);
