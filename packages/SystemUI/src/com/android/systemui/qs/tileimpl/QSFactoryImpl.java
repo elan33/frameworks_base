@@ -26,13 +26,7 @@ import com.android.systemui.qs.external.CustomTile;
 import com.android.systemui.qs.tiles.BaikalOSExtrasTile;
 import com.android.systemui.qs.tiles.AdbOverNetworkTile;
 import com.android.systemui.qs.tiles.AirplaneModeTile;
-<<<<<<< HEAD
-=======
-import com.android.systemui.qs.tiles.AmbientDisplayTile;
-import com.android.systemui.qs.tiles.AmbientPlayTile;
 import com.android.systemui.qs.tiles.ANBITile;
-import com.android.systemui.qs.tiles.AODTile;
->>>>>>> a69ad0c... base: Quick Settings: Add Accidental touch tile
 import com.android.systemui.qs.tiles.BatterySaverTile;
 import com.android.systemui.qs.tiles.BluetoothTile;
 import com.android.systemui.qs.tiles.CaffeineTile;
@@ -50,21 +44,12 @@ import com.android.systemui.qs.tiles.LocationTile;
 import com.android.systemui.qs.tiles.NfcTile;
 import com.android.systemui.qs.tiles.NightDisplayTile;
 import com.android.systemui.qs.tiles.RotationLockTile;
-<<<<<<< HEAD
 import com.android.systemui.qs.tiles.ScreenshotTile;
-<<<<<<< HEAD
 import com.android.systemui.qs.tiles.ScreenrecordTile;
-=======
-import com.android.systemui.qs.tiles.CalcTile;
-import com.android.systemui.qs.tiles.SmartPixelsTile;
 import com.android.systemui.qs.tiles.SoundTile;
 import com.android.systemui.qs.tiles.SleepScreenTile;
 import com.android.systemui.qs.tiles.SyncTile;
->>>>>>> e246b3e... Add SleepScreen QS Tile (PowerMenu on longpress)
 import com.android.systemui.qs.tiles.UsbTetherTile;
-=======
-import com.android.systemui.qs.tiles.SoundTile;
->>>>>>> a321a22... Add Sound tile to Quick Settings
 import com.android.systemui.qs.tiles.UserTile;
 import com.android.systemui.qs.tiles.VolumeTile;
 import com.android.systemui.qs.tiles.WifiTile;
