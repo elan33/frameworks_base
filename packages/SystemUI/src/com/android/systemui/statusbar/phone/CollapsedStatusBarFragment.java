@@ -72,7 +72,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private DarkIconManager mDarkIconManager;
     private View mOperatorNameFrame;
 
-    // AICP additions
+    // BAIKALOS additions
     private View mBatteryBar;
 
     private SignalCallback mSignalCallback = new SignalCallback() {
@@ -84,8 +84,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
 
     private final Handler mHandler = new Handler();
 
-    private class AicpSettingsObserver extends ContentObserver {
-        AicpSettingsObserver(Handler handler) {
+    private class BaikalOSSettingsObserver extends ContentObserver {
+        BaikalOSSettingsObserver(Handler handler) {
             super(handler);
         }
 
@@ -100,7 +100,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
             updateSettings(true);
         }
     }
-    private AicpSettingsObserver mAicpSettingsObserver;
+    private BaikalOSSettingsObserver mBaikalOSSettingsObserver;
 
     private int mTickerEnabled;
     private ContentResolver mContentResolver;
@@ -113,7 +113,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         mKeyguardMonitor = Dependency.get(KeyguardMonitor.class);
         mNetworkController = Dependency.get(NetworkController.class);
         mStatusBarComponent = SysUiServiceProvider.getComponent(getContext(), StatusBar.class);
-        mAicpSettingsObserver = new AicpSettingsObserver(mHandler);
+        mBaikalOSSettingsObserver = new BaikalOSSettingsObserver(mHandler);
     }
 
     @Override
@@ -139,7 +139,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         showClock(false);
         initEmergencyCryptkeeperText();
         initOperatorName();
-        mAicpSettingsObserver.observe();
+        mBaikalOSSettingsObserver.observe();
         updateSettings(false);
     }
 

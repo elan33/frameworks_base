@@ -6116,8 +6116,8 @@ message MetricsEvent {
     // OS: P
     FIELD_AUTOFILL_SESSION_ID = 1456;
 
-    // ACTION: Custom AICP metrics
-    AICP_METRICS = 10000;
+    // ACTION: Custom BAIKALOS metrics
+    BAIKALOS_METRICS = 10000;
 
     CUSTOM_QUICK_TILES = 9001;
 

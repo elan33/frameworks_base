@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 *
 */
-package com.android.internal.util.aicp;
+package com.android.internal.util.baikalos;
 
 import android.content.Context;
 import android.content.Intent;
@@ -32,7 +32,7 @@ import android.view.KeyEvent;
 import android.view.IWindowManager;
 import android.view.WindowManagerGlobal;
 
-public class AicpUtils {
+public class BaikalOSUtils {
     /**
      * @hide
      */

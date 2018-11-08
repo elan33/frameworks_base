@@ -253,7 +253,7 @@ import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
 import com.android.systemui.volume.VolumeComponent;
 
-import com.aicp.gear.util.ThemeOverlayHelper;
+import ru.baikalos.gear.util.ThemeOverlayHelper;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -812,7 +812,7 @@ public class StatusBar extends SystemUI implements DemoMode,
 
         Dependency.get(ConfigurationController.class).addCallback(this);
 
-        mAicpSettingsObserver.observe();
+        mBaikalOSSettingsObserver.observe();
     }
 
     // ================================================================================
@@ -4092,7 +4092,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         }
         */
 
-        // AICP theming
+        // BAIKALOS theming
         mUiOffloadThread.submit(() -> {
             ThemeOverlayHelper.updateOverlays(mContext, mOverlayManager,
                     mLockscreenUserManager.getCurrentUserId());
@@ -5272,9 +5272,9 @@ public class StatusBar extends SystemUI implements DemoMode,
         return mVrMode;
     }
 
-    private AicpSettingsObserver mAicpSettingsObserver = new AicpSettingsObserver(mHandler);
-    private class AicpSettingsObserver extends ContentObserver {
-        AicpSettingsObserver(Handler handler) {
+    private BaikalOSSettingsObserver mBaikalOSSettingsObserver = new BaikalOSSettingsObserver(mHandler);
+    private class BaikalOSSettingsObserver extends ContentObserver {
+        BaikalOSSettingsObserver(Handler handler) {
             super(handler);
         }
 

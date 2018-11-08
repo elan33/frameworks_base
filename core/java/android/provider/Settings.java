@@ -4100,12 +4100,12 @@ public final class Settings {
 
 
         /*****************************
-         * AICP System Settings start
+         * BAIKALOS System Settings start
          *****************************/
 
 
         /**
-         * Theme of AicpExtras.
+         * Theme of BaikalOSExtras.
          * @hide
          */
         public static final String AE_THEME = "ae_theme";
@@ -4401,7 +4401,7 @@ public final class Settings {
 
 
         /***************************
-         * AICP System Settings end
+         * BAIKALOS System Settings end
          ***************************/
 
 
@@ -4683,7 +4683,7 @@ public final class Settings {
             NOTIFICATION_VIBRATION_INTENSITY,
             HAPTIC_FEEDBACK_INTENSITY,
             DISPLAY_COLOR_MODE,
-            // AICP Settings
+            // BAIKALOS Settings
             AE_THEME,
             ENABLE_FORWARD_LOOKUP,
             ENABLE_PEOPLE_LOOKUP,
@@ -4714,7 +4714,7 @@ public final class Settings {
             THEMING_ACCENT,
             OMNI_USE_BOTTOM_GESTURE_NAVIGATION,
             OMNI_SHOW_BATTERY_IMAGE,
-            // AICP Settings end
+            // BAIKALOS Settings end
         };
 
         /**
@@ -4829,7 +4829,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(EGG_MODE);
             PRIVATE_SETTINGS.add(SHOW_BATTERY_PERCENT);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE);
-            // AICP Settings
+            // BAIKALOS Settings
             PRIVATE_SETTINGS.add(AE_THEME);
             PRIVATE_SETTINGS.add(ENABLE_FORWARD_LOOKUP);
             PRIVATE_SETTINGS.add(ENABLE_PEOPLE_LOOKUP);
@@ -4877,11 +4877,11 @@ public final class Settings {
             PRIVATE_SETTINGS.add(KEY_CAMERA_LONG_PRESS_ACTION);
             PRIVATE_SETTINGS.add(KEY_CAMERA_DOUBLE_TAP_ACTION);
             PRIVATE_SETTINGS.add(OMNI_SHOW_BATTERY_IMAGE);
-            // AICP Settings end
+            // BAIKALOS Settings end
         }
 
         /**
-         * These are all public system and private Aicp settings
+         * These are all public system and private BaikalOS settings
          *
          * All settings in {@link SETTINGS_TO_BACKUP} array *must* have a non-null validator,
          * otherwise they won't be restored.
@@ -4966,7 +4966,7 @@ public final class Settings {
             VALIDATORS.put(WIFI_STATIC_DNS1, WIFI_STATIC_DNS1_VALIDATOR);
             VALIDATORS.put(WIFI_STATIC_DNS2, WIFI_STATIC_DNS2_VALIDATOR);
             VALIDATORS.put(SHOW_BATTERY_PERCENT, SHOW_BATTERY_PERCENT_VALIDATOR);
-            // AICP Settings
+            // BAIKALOS Settings
             VALIDATORS.put(AE_THEME, AE_THEME_VALIDATOR);
             VALIDATORS.put(ENABLE_FORWARD_LOOKUP, ENABLE_FORWARD_LOOKUP_VALIDATOR);
             VALIDATORS.put(ENABLE_PEOPLE_LOOKUP, ENABLE_PEOPLE_LOOKUP_VALIDATOR);
@@ -5013,7 +5013,7 @@ public final class Settings {
             VALIDATORS.put(BUTTON_BRIGHTNESS, BUTTON_BRIGHTNESS_VALIDATOR);
             VALIDATORS.put(BUTTON_BRIGHTNESS_ENABLED, BUTTON_BRIGHTNESS_ENABLED_VALIDATOR);
             VALIDATORS.put(OMNI_SHOW_BATTERY_IMAGE, OMNI_SHOW_BATTERY_IMAGE_VALIDATOR);
-            // AICP Settings end
+            // BAIKALOS Settings end
         }
 
         /**

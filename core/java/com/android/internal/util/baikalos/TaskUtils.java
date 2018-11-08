@@ -16,7 +16,7 @@
  *
  */
 
-package com.android.internal.util.aicp;
+package com.android.internal.util.baikalos;
 
 import android.app.Activity;
 import android.app.ActivityOptions;

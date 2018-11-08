@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 *
 */
-package com.android.internal.util.aicp;
+package com.android.internal.util.baikalos;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;

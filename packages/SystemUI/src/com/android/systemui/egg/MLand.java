@@ -769,7 +769,7 @@ public class MLand extends FrameLayout {
                     .setDuration(250);
             mObstaclesInPlay.add(s1);
 
-            final Obstacle p1 = new AicpHead(getContext(), PARAMS.OBSTACLE_WIDTH);
+            final Obstacle p1 = new BaikalOSHead(getContext(), PARAMS.OBSTACLE_WIDTH);
             addView(p1, new LayoutParams(
                     PARAMS.OBSTACLE_WIDTH,
                     PARAMS.OBSTACLE_WIDTH,
@@ -804,7 +804,7 @@ public class MLand extends FrameLayout {
                     .setDuration(400);
             mObstaclesInPlay.add(s2);
 
-            final Obstacle p2 = new AicpHead(getContext(), PARAMS.OBSTACLE_WIDTH);
+            final Obstacle p2 = new BaikalOSHead(getContext(), PARAMS.OBSTACLE_WIDTH);
             addView(p2, new LayoutParams(
                     PARAMS.OBSTACLE_WIDTH,
                     PARAMS.OBSTACLE_WIDTH,
@@ -1299,18 +1299,18 @@ public class MLand extends FrameLayout {
             }
         }
     }
-    private class AicpHead extends Obstacle {
+    private class BaikalOSHead extends Obstacle {
         int mRotate;
         int cx, cy, r;
 
-        public AicpHead(Context context, float h) {
+        public BaikalOSHead(Context context, float h) {
             super(context, h);
             if (frand() > 0.8f) {
-                setBackgroundResource(R.drawable.aicp_head_2);
+                setBackgroundResource(R.drawable.baikalos_head_2);
             } else if (frand() > 0.8f) {
-                setBackgroundResource(R.drawable.aicp_head_3);
+                setBackgroundResource(R.drawable.baikalos_head_3);
             } else {
-                setBackgroundResource(R.drawable.aicp_head_1);
+                setBackgroundResource(R.drawable.baikalos_head_1);
             }
             setOutlineProvider(new ViewOutlineProvider() {
                 @Override
