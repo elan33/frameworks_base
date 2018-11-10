@@ -173,6 +173,7 @@ public class KeyguardBottomAreaView extends FrameLayout implements View.OnClickL
     private int mIndicationBottomMarginAmbient;
     private float mDarkAmount;
     private int mBurnInXOffset;
+    private int mBurnInYOffset;
     private boolean mIsPowerCameraGesture;
     private String mPreviousSource;
 

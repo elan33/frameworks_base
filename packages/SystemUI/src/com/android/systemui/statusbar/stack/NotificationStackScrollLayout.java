@@ -3998,12 +3998,17 @@ public class NotificationStackScrollLayout extends ViewGroup
         notifyHeightChangeListener(mShelf);
     }
 
-    private void updateAntiBurnInTranslation() {
-        float x = mAntiBurnInOffsetX * mDarkAmount;
+    private void updatePanelTranslation() {
+        float x = (mVerticalPanelTranslation + mAntiBurnInOffsetX * mInterpolatedDarkAmount);
         if (!onKeyguard()) {
             x += getTranslationX();
         }
         setTranslationX(x);
+    }
+
+    public void setVerticalPanelTranslation(float verticalPanelTranslation) {
+        mVerticalPanelTranslation = verticalPanelTranslation;
+        updatePanelTranslation();
     }
 
     /**
