@@ -11237,6 +11237,34 @@ public final class Settings {
         public static final String DEVICE_IDLE_CONSTANTS = "device_idle_constants";
 
         /**
+         * @hide
+         */
+        public static final String DEVICE_IDLE_AGGRESSIVE = "device_idle_aggressive_enabled";
+
+        /** @hide */
+        private static final Validator DEVICE_IDLE_AGGRESSIVE_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * @hide
+         */
+        public static final String POWERSAVE_WL_BLOCK = "powersave_wl_block_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_WL_BLOCK_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * @hide
+         */
+        public static final String POWERSAVE_THROTTLE_ALARMS = "powersave_throttle_alarms_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_THROTTLE_ALARMS_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+
+        /**
          * Battery Saver specific settings
          * This is encoded as a key=value list, separated by commas. Ex:
          *
