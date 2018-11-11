@@ -54,6 +54,8 @@ import android.util.EventLog;
 import android.util.Slog;
 import android.util.TimingsTraceLog;
 import android.view.WindowManager;
+import android.database.ContentObserver;
+import android.provider.Settings;
 
 import com.android.internal.R;
 import com.android.internal.app.ColorDisplayController;
@@ -304,6 +306,19 @@ public final class SystemServer {
 
         mRuntimeStartElapsedTime = SystemClock.elapsedRealtime();
         mRuntimeStartUptime = SystemClock.uptimeMillis();
+    }
+
+    private class AdbPortObserver extends ContentObserver {
+        public AdbPortObserver() {
+            super(null);
+        }
+        @Override
+        public void onChange(boolean selfChange) {
+            int adbPort = Settings.Secure.getInt(mContentResolver,
+                    Settings.Secure.ADB_PORT, 0);
+            // Setting this will control whether ADB runs on TCP/IP or USB
+            SystemProperties.set("adb.network.port", Integer.toString(adbPort));
+        }
     }
 
     private void run() {
@@ -1611,6 +1626,15 @@ public final class SystemServer {
         traceBeginAndSlog("StartStatsCompanionService");
         mSystemServiceManager.startService(StatsCompanionService.Lifecycle.class);
         traceEnd();
+
+
+        // Make sure the ADB_ENABLED setting value matches the secure property value
+        Settings.Secure.putInt(mContentResolver, Settings.Secure.ADB_PORT,
+                SystemProperties.getInt("service.adb.tcp.port", -1));
+        // Register observer to listen for settings changes
+        mContentResolver.registerContentObserver(
+                Settings.Secure.getUriFor(Settings.Secure.ADB_PORT),
+                false, new AdbPortObserver());
 
         // Before things start rolling, be sure we have decided whether
         // we are in safe mode.
