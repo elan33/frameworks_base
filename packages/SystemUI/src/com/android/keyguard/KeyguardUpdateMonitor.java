@@ -64,6 +64,7 @@ import android.os.ServiceManager;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.service.dreams.DreamService;
 import android.service.dreams.IDreamManager;
@@ -1129,6 +1130,34 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener {
             KeyguardUpdateMonitorCallback cb = mCallbacks.get(i).get();
             if (cb != null) {
                 cb.onScreenTurnedOn();
+            }
+        }
+
+        String wakeupReason = SystemProperties.get("power.wake_reason","unknown");
+
+        if( wakeupReason.equals("android.policy:POWER") ||
+            wakeupReason.equals("com.android.systemui:NODOZE") ||
+            wakeupReason.equals("wakelock:qfp-service") ) {
+
+            int userId = getCurrentUser();
+            Log.v(TAG, "handleScreenTurnedOn: getStrongAuthTracker:" + Integer.toHexString(getStrongAuthTracker().getStrongAuthForUser(userId)));
+
+            if( getStrongAuthTracker().getStrongAuthForUser(userId) == 0 &&
+                Settings.Secure.getIntForUser(mContext.getContentResolver(),
+                           Settings.Secure.SMARTLOCK_AUTO_UNLOCK, 0,
+                           UserHandle.USER_CURRENT) == 1 ) {
+
+                //if (DEBUG) {
+                    Log.v(TAG, "handleScreenTurnedOn: user authenticated, update trust :" + Integer.toHexString(getStrongAuthTracker().getStrongAuthForUser(userId)));
+                //}
+
+                for (int i = 0; i < mCallbacks.size(); i++) {
+                    KeyguardUpdateMonitorCallback cb = mCallbacks.get(i).get();
+                    if (cb != null) {
+                        cb.onTrustChanged(userId);
+                    }
+                }
+
             }
         }
     }
