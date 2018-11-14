@@ -1143,7 +1143,7 @@ public final class PowerManagerService extends SystemService
                 opUid = wakeLock.mWorkSource != null ? wakeLock.mWorkSource.get(0)
                         : wakeLock.mOwnerUid;
             }
-            wakeUpNoUpdateLocked(SystemClock.uptimeMillis(), wakeLock.mTag, opUid,
+            wakeUpNoUpdateLocked(SystemClock.uptimeMillis(), "wakelock:" + wakeLock.mTag, opUid,
                     opPackageName, opUid);
         }
     }
@@ -1463,6 +1463,7 @@ public final class PowerManagerService extends SystemService
             }
 
             mLastWakeTime = eventTime;
+            setWakupReasonLocked(reason);
             setWakefulnessLocked(WAKEFULNESS_AWAKE, 0);
 
             mNotifier.onWakeUp(reason, reasonUid, opPackageName, opUid);
@@ -1472,6 +1473,17 @@ public final class PowerManagerService extends SystemService
             Trace.traceEnd(Trace.TRACE_TAG_POWER);
         }
         return true;
+    }
+
+
+    void setWakupReasonLocked(String reason) {
+        Slog.d(TAG, "setWakupReason="+reason);
+        try {
+            SystemProperties.set("power.wake_reason",reason);
+        }
+        catch( Exception e ) {
+            Slog.e(TAG, "SystemPropertiesSet: unable to set property power.wake_reason to " + reason, e);
+        }
     }
 
     private void goToSleepInternal(long eventTime, int reason, int flags, int uid) {
@@ -4010,7 +4022,7 @@ public final class PowerManagerService extends SystemService
     /**
      * Represents a wake lock that has been acquired by an application.
      */
-    protected final class WakeLock implements IBinder.DeathRecipient {
+    public final class WakeLock implements IBinder.DeathRecipient {
         public final IBinder mLock;
         public int mFlags;
         public String mTag;
