@@ -1146,6 +1146,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.KEY_CAMERA_DOUBLE_TAP_ACTION), false, this,
                     UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.TORCH_LONG_PRESS_POWER_GESTURE), false, this,
+                    UserHandle.USER_ALL);
             updateSettings();
         }
 
@@ -2889,6 +2892,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mRingerToggleChord = Settings.Secure.getIntForUser(resolver,
                     Settings.Secure.VOLUME_HUSH_GESTURE, VOLUME_HUSH_OFF,
                     UserHandle.USER_CURRENT);
+            mTorchLongPressPowerEnabled = Settings.System.getIntForUser(
+                    resolver, Settings.System.TORCH_LONG_PRESS_POWER_GESTURE, 0,
+                    UserHandle.USER_CURRENT) == 1;
+
             if (!mContext.getResources()
                     .getBoolean(com.android.internal.R.bool.config_volumeHushGestureEnabled)) {
                 mRingerToggleChord = Settings.Secure.VOLUME_HUSH_OFF;
@@ -10002,6 +10009,22 @@ public class PhoneWindowManager implements WindowManagerPolicy {
        //             SystemClock.elapsedRealtime() + mTorchTimeout * 1000, mTorchOffPendingIntent);
        // }
     }
+
+
+    private void toggleTorch(boolean on) {
+        cancelTorchOff();
+        final boolean origEnabled = mTorchEnabled;
+        try {
+            final String rearFlashCameraId = getRearFlashCameraId();
+            if (rearFlashCameraId != null) {
+                mCameraManager.setTorchMode(rearFlashCameraId, on);
+                mTorchEnabled = on;
+            }
+        } catch (CameraAccessException e) {
+            // Ignore
+        }
+    }
+
     private String getRearFlashCameraId() throws CameraAccessException {
         if (mRearFlashCameraId != null) return mRearFlashCameraId;
         for (final String id : mCameraManager.getCameraIdList()) {
@@ -10014,6 +10037,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
         return mRearFlashCameraId;
     }
+
     private class TorchModeCallback extends CameraManager.TorchCallback {
         @Override
         public void onTorchModeChanged(String cameraId, boolean enabled) {

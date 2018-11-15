@@ -176,16 +176,16 @@ public class AudioService extends IAudioService.Stub
     private static final String TAG = "AudioService";
 
     /** Debug audio mode */
-    protected static final boolean DEBUG_MODE = Log.isLoggable(TAG + ".MOD", Log.DEBUG);
+    protected static final boolean DEBUG_MODE = true; //Log.isLoggable(TAG + ".MOD", Log.DEBUG);
 
     /** Debug audio policy feature */
-    protected static final boolean DEBUG_AP = Log.isLoggable(TAG + ".AP", Log.DEBUG);
+    protected static final boolean DEBUG_AP = true;  //Log.isLoggable(TAG + ".AP", Log.DEBUG);
 
     /** Debug volumes */
-    protected static final boolean DEBUG_VOL = Log.isLoggable(TAG + ".VOL", Log.DEBUG);
+    protected static final boolean DEBUG_VOL = true;  //Log.isLoggable(TAG + ".VOL", Log.DEBUG);
 
     /** debug calls to devices APIs */
-    protected static final boolean DEBUG_DEVICES = Log.isLoggable(TAG + ".DEVICES", Log.DEBUG);
+    protected static final boolean DEBUG_DEVICES = true;  //Log.isLoggable(TAG + ".DEVICES", Log.DEBUG);
     /** How long to delay before persisting a change in volume/ringer mode. */
     private static final int PERSIST_DELAY = 500;
 
@@ -629,6 +629,8 @@ public class AudioService extends IAudioService.Stub
 
     private static Long mLastDeviceConnectMsgTime = new Long(0);
 
+    private final boolean mVoiceCapable;
+
     private NotificationManager mNm;
     private AudioManagerInternal.RingerModeDelegate mRingerModeDelegate;
     private VolumePolicy mVolumePolicy = VolumePolicy.DEFAULT;
@@ -788,6 +790,10 @@ public class AudioService extends IAudioService.Stub
 
         mForcedUseForComm = AudioSystem.FORCE_NONE;
 
+        mVoiceCapable = context.getResources().getBoolean(
+                com.android.internal.R.bool.config_voice_capable);
+
+
         createAudioSystemThread();
 
         AudioSystem.setErrorCallback(mAudioSystemCallback);
@@ -813,6 +819,8 @@ public class AudioService extends IAudioService.Stub
 
         mUseFixedVolume = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_useFixedVolume);
+
+
 
         // must be called before readPersistedSettings() which needs a valid mStreamVolumeAlias[]
         // array initialized by updateStreamVolumeAlias()
@@ -1212,6 +1220,10 @@ public class AudioService extends IAudioService.Stub
 
         mStreamVolumeAlias[AudioSystem.STREAM_DTMF] = dtmfStreamAlias;
         mStreamVolumeAlias[AudioSystem.STREAM_ACCESSIBILITY] = a11yStreamAlias;
+
+        if (mVoiceCapable) {
+            mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] = AudioSystem.STREAM_RING;
+        }
 
         if (updateVolumes && mStreamStates != null) {
             updateDefaultVolumes();

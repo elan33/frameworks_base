@@ -56,7 +56,7 @@ import static com.android.server.am.ActivityManagerDebugConfig.TAG_WITH_CLASS_NA
 /**
  * A running application service.
  */
-final class ServiceRecord extends Binder implements ComponentName.WithComponentName {
+public final class ServiceRecord extends Binder implements ComponentName.WithComponentName {
     private static final String TAG = TAG_WITH_CLASS_NAME ? "ServiceRecord" : TAG_AM;
 
     // Maximum number of delivery attempts before giving up.

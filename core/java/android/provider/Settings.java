@@ -4618,6 +4618,33 @@ public final class Settings {
                 BOOLEAN_VALIDATOR;
 
         /**
+         * @hide
+         */
+        public static final String TORCH_LONG_PRESS_POWER_GESTURE = "torch_long_press_power_gesture";
+
+        /** @hide */
+        private static final Validator TORCH_LONG_PRESS_POWER_GESTURE_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * @hide
+         */
+        public static final String TORCH_ON_INCOMING_CALL = "torch_on_incoming_call";
+
+        /** @hide */
+        private static final Validator TORCH_ON_INCOMING_CALL_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * @hide
+         */
+        public static final String TORCH_ON_NOTIFICATION = "torch_on_notification";
+
+        /** @hide */
+        private static final Validator TORCH_ON_NOTIFICATION_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
          * IMPORTANT: If you add a new public settings you also have to add it to
          * PUBLIC_SETTINGS below. If the new setting is hidden you have to add   
          * it to PRIVATE_SETTINGS below. Also add a validator that can validate
