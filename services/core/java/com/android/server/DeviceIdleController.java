@@ -796,7 +796,7 @@ public class DeviceIdleController extends SystemService
                     false, this);
 
             mResolver.registerContentObserver(
-                    Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_AGGRESSIVE),
+                    Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_AGGRESSIVE_ENABLED),
                     false, this);
 
             updateConstants();
@@ -829,7 +829,7 @@ public class DeviceIdleController extends SystemService
                 try {
 
                     AGGRESSIVE_MODE = Settings.Global.getInt(mResolver,
-                            Settings.Global.DEVICE_IDLE_AGGRESSIVE) == 1;
+                            Settings.Global.DEVICE_IDLE_AGGRESSIVE_ENABLED) == 1;
 
                 } catch (Exception e) {
                     // Failed to parse the settings string, log this and move on

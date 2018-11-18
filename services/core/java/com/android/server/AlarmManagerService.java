@@ -163,6 +163,7 @@ class AlarmManagerService extends SystemService {
 
     AppOpsManager mAppOps;
     DeviceIdleController.LocalService mLocalDeviceIdleController;
+    BaikalService mBaikalService;
     private UsageStatsManagerInternal mUsageStatsManagerInternal;
 
     final Object mLock = new Object();
@@ -741,7 +742,7 @@ class AlarmManagerService extends SystemService {
         publishLocalService(AlarmManagerInternal.class, new LocalService());
     }
 
-    static long convertToElapsed(long when, int type) {
+    protected static long convertToElapsed(long when, int type) {
         final boolean isRtc = (type == RTC || type == RTC_WAKEUP);
         if (isRtc) {
             when -= System.currentTimeMillis() - SystemClock.elapsedRealtime();
@@ -1335,8 +1336,8 @@ class AlarmManagerService extends SystemService {
 
         // now that we have initied the driver schedule the alarm
         mClockReceiver = new ClockReceiver();
-        mClockReceiver.scheduleTimeTickEvent();
-        mClockReceiver.scheduleDateChangedEvent();
+        //mClockReceiver.scheduleTimeTickEvent();
+        //mClockReceiver.scheduleDateChangedEvent();
         mInteractiveStateReceiver = new InteractiveStateReceiver();
         mUninstallReceiver = new UninstallReceiver();
 
@@ -1370,6 +1371,12 @@ class AlarmManagerService extends SystemService {
 
             mAppStateTracker = LocalServices.getService(AppStateTracker.class);
             mAppStateTracker.addListener(mForceAppStandbyListener);
+            mBaikalService = LocalServices.getService(BaikalService.class);
+            mBaikalService.setAlarmManagerService(this);
+
+            mClockReceiver.scheduleTimeTickEvent();
+            mClockReceiver.scheduleDateChangedEvent();
+
         }
     }
 
@@ -1532,6 +1539,8 @@ class AlarmManagerService extends SystemService {
         } catch (RemoteException e) {
         }
         removeLocked(operation, directReceiver);
+        mBaikalService.processAlarm(a,mPendingIdleUntil);
+        mBaikalService.adjustAlarm(a);
         setImplLocked(a, false, doValidate);
     }
 
@@ -1603,8 +1612,10 @@ class AlarmManagerService extends SystemService {
             // The caller has given the time they want this to happen at, however we need
             // to pull that earlier if there are existing alarms that have requested to
             // bring us out of idle at an earlier time.
-            if (mNextWakeFromIdle != null && a.whenElapsed > mNextWakeFromIdle.whenElapsed) {
-                a.when = a.whenElapsed = a.maxWhenElapsed = mNextWakeFromIdle.whenElapsed;
+            if( !mBaikalService.isAggressiveIdle() ) {
+                if (mNextWakeFromIdle != null && a.whenElapsed > mNextWakeFromIdle.whenElapsed) {
+                    a.when = a.whenElapsed = a.maxWhenElapsed = mNextWakeFromIdle.whenElapsed;
+                }
             }
             // Add fuzz to make the alarm go off some time before the actual desired time.
             final long nowElapsed = SystemClock.elapsedRealtime();
@@ -3221,15 +3232,15 @@ class AlarmManagerService extends SystemService {
 
     @VisibleForTesting
     static class Alarm {
-        public final int type;
-        public final long origWhen;
-        public final boolean wakeup;
+        public int type;
+        public long origWhen;
+        public boolean wakeup;
         public final PendingIntent operation;
         public final IAlarmListener listener;
         public final String listenerTag;
         public final String statsTag;
         public final WorkSource workSource;
-        public final int flags;
+        public int flags;
         public final AlarmManager.AlarmClockInfo alarmClock;
         public final int uid;
         public final int creatorUid;
@@ -3312,6 +3323,38 @@ class AlarmManagerService extends SystemService {
             return sb.toString();
         }
 
+        public String toStringLong() {
+            StringBuilder sb = new StringBuilder(256);
+            sb.append("Alarm{");
+            sb.append(Integer.toHexString(System.identityHashCode(this)));
+            sb.append(" type ");
+            sb.append(type);
+            sb.append(" when ");
+            sb.append(getWhen());
+            sb.append(" ");
+            sb.append(sourcePackage);
+            sb.append(" ");
+            sb.append(packageName);
+            sb.append(" ");
+            sb.append(uid);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        private String getWhen() {
+            String strDateFormat = "hh:mm:ss a dd-MMM-yyyy"; //Date format is Specified
+            SimpleDateFormat sdf = new SimpleDateFormat(strDateFormat); 
+            final boolean isRtc = (type == RTC || type == RTC_WAKEUP);
+
+            if (isRtc) {
+                return sdf.format(new Date(when));
+            } else {
+                StringBuilder builder = new StringBuilder(128);
+                TimeUtils.formatDuration(when - SystemClock.elapsedRealtime(), builder);
+                return builder.toString();
+            }
+        }
+
         public void dump(PrintWriter pw, String prefix, long nowELAPSED, long nowRTC,
                 SimpleDateFormat sdf) {
             final boolean isRtc = (type == RTC || type == RTC_WAKEUP);
@@ -3390,7 +3433,13 @@ class AlarmManagerService extends SystemService {
     }
 
     long currentNonWakeupFuzzLocked(long nowELAPSED) {
+
+        if(mBaikalService.throttleAlarms()) {
+            return 3*60*60*1000;
+        }
+
         long timeSinceOn = nowELAPSED - mNonInteractiveStartTime;
+        
         if (timeSinceOn < 5*60*1000) {
             // If the screen has been off for 5 minutes, only delay by at most two minutes.
             return 2*60*1000;
@@ -3403,7 +3452,12 @@ class AlarmManagerService extends SystemService {
         }
     }
 
-    static int fuzzForDuration(long duration) {
+    int fuzzForDuration(long duration) {
+
+        if(mBaikalService.throttleAlarms()) {
+            return -1;
+        }
+
         if (duration < 15*60*1000) {
             // If the duration until the time is less than 15 minutes, the maximum fuzz
             // is the duration.
@@ -4305,8 +4359,7 @@ class AlarmManagerService extends SystemService {
             } else {
                 fs.nesting++;
             }
-            if (alarm.type == ELAPSED_REALTIME_WAKEUP
-                    || alarm.type == RTC_WAKEUP) {
+            if (alarm.wakeup) {
                 bs.numWakeup++;
                 fs.numWakeup++;
                 ActivityManager.noteWakeupAlarm(

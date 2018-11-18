@@ -11281,28 +11281,28 @@ public final class Settings {
         /**
          * @hide
          */
-        public static final String DEVICE_IDLE_AGGRESSIVE = "device_idle_aggressive_enabled";
+        public static final String DEVICE_IDLE_AGGRESSIVE_ENABLED = "device_idle_aggressive_enabled";
 
         /** @hide */
-        private static final Validator DEVICE_IDLE_AGGRESSIVE_VALIDATOR =
+        private static final Validator DEVICE_IDLE_AGGRESSIVE_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
         /**
          * @hide
          */
-        public static final String POWERSAVE_WL_BLOCK = "powersave_wl_block_enabled";
+        public static final String POWERSAVE_WL_BLOCK_ENABLED = "powersave_wl_block_enabled";
 
         /** @hide */
-        private static final Validator POWERSAVE_WL_BLOCK_VALIDATOR =
+        private static final Validator POWERSAVE_WL_BLOCK_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
         /**
          * @hide
          */
-        public static final String POWERSAVE_THROTTLE_ALARMS = "powersave_throttle_alarms_enabled";
+        public static final String POWERSAVE_THROTTLE_ALARMS_ENABLED = "powersave_throttle_alarms_enabled";
 
         /** @hide */
-        private static final Validator POWERSAVE_THROTTLE_ALARMS_VALIDATOR =
+        private static final Validator POWERSAVE_THROTTLE_ALARMS_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
 

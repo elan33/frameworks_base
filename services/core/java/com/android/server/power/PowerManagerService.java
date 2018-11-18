@@ -106,6 +106,8 @@ import com.android.server.policy.WindowManagerPolicy;
 import com.android.server.power.batterysaver.BatterySaverController;
 import com.android.server.power.batterysaver.BatterySaverStateMachine;
 import com.android.server.power.batterysaver.BatterySavingStats;
+import com.android.server.LocalServices;
+import com.android.server.BaikalService;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -551,6 +553,7 @@ public final class PowerManagerService extends SystemService
     private boolean mUidsChanged;
     private QCNsrmPowerExtension qcNsrmPowExt;
 
+    private BaikalService mBaikalService;
 
     // True if theater mode is enabled
     private boolean mTheaterModeEnabled;
@@ -763,7 +766,9 @@ public final class PowerManagerService extends SystemService
         synchronized (mLock) {
             if (phase == PHASE_THIRD_PARTY_APPS_CAN_START) {
                 incrementBootCount();
-
+            } else if (phase == PHASE_SYSTEM_SERVICES_READY) {
+                mBaikalService = LocalServices.getService(BaikalService.class);
+                mBaikalService.setPowerManagerService(this);
             } else if (phase == PHASE_BOOT_COMPLETED) {
                 final long now = SystemClock.uptimeMillis();
                 mBootCompleted = true;
@@ -3121,6 +3126,11 @@ public final class PowerManagerService extends SystemService
     private boolean setWakeLockDisabledStateLocked(WakeLock wakeLock) {
         if ((wakeLock.mFlags & PowerManager.WAKE_LOCK_LEVEL_MASK)
                 == PowerManager.PARTIAL_WAKE_LOCK) {
+
+            if( mBaikalService.setWakeLockDisabledState(wakeLock)) {
+                return true;
+            }
+
             boolean disabled = false;
             final int appid = UserHandle.getAppId(wakeLock.mOwnerUid);
             if (appid >= Process.FIRST_APPLICATION_UID) {

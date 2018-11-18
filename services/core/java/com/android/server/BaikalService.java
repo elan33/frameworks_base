@@ -17,6 +17,7 @@
 package com.android.server;
 
 import android.app.Service;
+import android.app.AlarmManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContentResolver;
@@ -36,6 +37,8 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.PowerManagerInternal;
 import android.os.UserHandle;
+import android.os.Process;
+import android.os.SystemClock;
 import android.util.Slog;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -43,6 +46,10 @@ import com.android.internal.os.BackgroundThread;
 import com.android.server.power.PowerManagerService;
 import com.android.server.power.PowerManagerService.WakeLock;
 import com.android.server.am.ServiceRecord;
+import com.android.server.am.ActivityManagerService;
+import com.android.server.DeviceIdleController;
+import com.android.server.AlarmManagerService;
+
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -63,7 +70,7 @@ import android.provider.Settings;
 import java.util.List;
 
 
-class BaikalService extends SystemService {
+public class BaikalService extends SystemService {
 
     private static final String TAG = "BaikalService";
 
@@ -82,6 +89,9 @@ class BaikalService extends SystemService {
     private boolean mActiveIncomingCall;
     private boolean mTorchEnabled;
 
+    private boolean mThrottleAlarms;
+    private boolean mIdleAggressive;
+
     Thread mTorchThread = null;
 
     private final Context mContext;
@@ -92,8 +102,19 @@ class BaikalService extends SystemService {
     private String mRearFlashCameraId;
 
 
+    AlarmManagerService mAlarmManagerService;
+    DeviceIdleController mDeviceIdleController;
+    PowerManagerService mPowerManagerService;
+    ActivityManagerService mActivityManagerService;
 
     private boolean mNetworkAllowedWhileIdle;
+
+    // Set of app ids that we will always respect the wake locks for.
+    int[] mDeviceIdleWhitelist = new int[0];
+
+    // Set of app ids that are temporarily allowed to acquire wakelocks due to high-pri message
+    int[] mDeviceIdleTempWhitelist = new int[0];
+
 
     public BaikalService(Context context) {
         super(context);
@@ -134,6 +155,31 @@ class BaikalService extends SystemService {
 
     }
 
+    public void setAlarmManagerService(AlarmManagerService service) {
+        synchronized (this) {
+            mAlarmManagerService = service;
+        }
+    }
+
+    public void setPowerManagerService(PowerManagerService service) {
+        synchronized (this) {
+            mPowerManagerService = service;
+        }
+    }
+
+    public void setActivityManagerService(ActivityManagerService service) {
+        synchronized (this) {
+            mActivityManagerService = service;
+        }
+    }
+
+    public void setDeviceIdleController(DeviceIdleController service) {
+        synchronized (this) {
+            mDeviceIdleController = service;
+        }
+    }
+
+
     @Override
     public void onSwitchUser(int userHandle) {
         if( DEBUG ) {
@@ -165,6 +211,7 @@ class BaikalService extends SystemService {
             super(handler);
             mResolver = resolver;
 
+            try {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.TORCH_LONG_PRESS_POWER_GESTURE), false, this,
                     UserHandle.USER_ALL);
@@ -177,9 +224,15 @@ class BaikalService extends SystemService {
                     Settings.System.TORCH_ON_NOTIFICATION), false, this,
                     UserHandle.USER_ALL);
 
-            //mResolver.registerContentObserver(
-            //        Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_CONSTANTS),
-            //        false, this);
+            resolver.registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.POWERSAVE_THROTTLE_ALARMS_ENABLED),
+                    false, this);
+
+            resolver.registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_AGGRESSIVE_ENABLED),
+                    false, this);
+            } catch( Exception e ) {
+            }
 
             //mResolver.registerContentObserver(
             //        Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_AGGRESSIVE),
@@ -200,30 +253,44 @@ class BaikalService extends SystemService {
         }
 
         public void updateConstantsLocked() {
-                try {
-
-                    mTorchLongPressPowerEnabled = Settings.System.getIntForUser(
-                            mResolver, Settings.System.TORCH_LONG_PRESS_POWER_GESTURE, 0,
-                            UserHandle.USER_CURRENT) == 1;
-
-
-                    mTorchIncomingCall = Settings.System.getIntForUser(
-                            mResolver, Settings.System.TORCH_ON_INCOMING_CALL, 0,
-                            UserHandle.USER_CURRENT) == 1;
+            try {
+                mTorchLongPressPowerEnabled = Settings.System.getIntForUser(
+                        mResolver, Settings.System.TORCH_LONG_PRESS_POWER_GESTURE, 0,
+                        UserHandle.USER_CURRENT) == 1;
 
 
-                    mTorchNotification = Settings.System.getIntForUser(
-                            mResolver, Settings.System.TORCH_ON_NOTIFICATION, 0,
-                            UserHandle.USER_CURRENT) == 1;
+                mTorchIncomingCall = Settings.System.getIntForUser(
+                        mResolver, Settings.System.TORCH_ON_INCOMING_CALL, 0,
+                        UserHandle.USER_CURRENT) == 1;
+
+
+                mTorchNotification = Settings.System.getIntForUser(
+                        mResolver, Settings.System.TORCH_ON_NOTIFICATION, 0,
+                        UserHandle.USER_CURRENT) == 1;
+
+
+                mIdleAggressive = Settings.Global.getInt(mResolver,
+                        Settings.Global.DEVICE_IDLE_AGGRESSIVE_ENABLED) == 1;
+
+                mThrottleAlarms = Settings.Global.getInt(
+                        mResolver, Settings.Global.POWERSAVE_THROTTLE_ALARMS_ENABLED, 
+                        0) == 1;
 
                     //mParser.setString(Settings.Global.getString(mResolver,
                     //        Settings.Global.DEVICE_IDLE_CONSTANTS));
 
-                } catch (IllegalArgumentException e) {
+            } catch (Exception e) {
                     // Failed to parse the settings string, log this and move on
                     // with defaults.
-                    Slog.e(TAG, "Bad BaikalService settings", e);
-                }
+                Slog.e(TAG, "Bad BaikalService settings", e);
+            }
+
+            Slog.d(TAG, "updateConstantsLocked: mTorchLongPressPowerEnabled=" + mTorchLongPressPowerEnabled +
+                        "mTorchIncomingCall=" + mTorchIncomingCall +
+                        "mTorchNotification=" + mTorchNotification +
+                        "mIdleAggressive=" + mIdleAggressive +
+                        "mThrottleAlarms=" + mThrottleAlarms);
+
         }
 
     }
@@ -618,6 +685,191 @@ class BaikalService extends SystemService {
         synchronized(this) {
             setLastWakeupReasonLocked(reason);
         }
+    }
+
+    public void setDeviceIdleWhitelist(int[] appids) {
+        synchronized (this) {
+            mDeviceIdleWhitelist = appids;
+        }
+    }
+
+    public void setDeviceIdleTempWhitelist(int[] appids) {
+        synchronized (this) {
+            mDeviceIdleTempWhitelist = appids;
+        }
+    }
+
+    public boolean setWakeLockDisabledState(WakeLock wakeLock) {
+        return false;
+    }
+
+    public boolean throttleAlarms() {
+        synchronized (this) {
+            return mThrottleAlarms;
+        }
+    }
+
+
+    public boolean isAggressiveIdle() {
+        synchronized (this) {
+            return mIdleAggressive;
+        }
+    }
+
+    public boolean processAlarm(AlarmManagerService.Alarm a, AlarmManagerService.Alarm pendingUntil) {
+
+        if ( a == pendingUntil ) {
+            if( DEBUG ) {
+                Slog.i(TAG,"DeviceIdleAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            }
+            return false;
+        }
+
+        a.wakeup = a.type == AlarmManager.ELAPSED_REALTIME_WAKEUP
+                || a.type == AlarmManager.RTC_WAKEUP;
+
+        if ( a.uid < Process.FIRST_APPLICATION_UID && 
+            ((a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) != 0 
+            || a.wakeup)) {
+
+            if( restrictSystemIdleAlarm(a) ) {
+                if( DEBUG ) {
+                    Slog.i(TAG,"SystemAlarm: throttle IDLE alarm:" + a.statsTag + ":" + a.toStringLong());
+                }
+                return true;
+            }
+            
+            if( DEBUG ) {
+                Slog.i(TAG,"SystemAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            }
+            return false;    
+        }
+
+        if( ((a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) != 0
+            || a.wakeup) ) {
+
+            if( restrictAppIdleAlarm(a) ) {
+                if( DEBUG ) {
+                    Slog.i(TAG,"AppAlarm: throttle IDLE alarm:" + a.statsTag + ":" + a.toStringLong());
+                }
+                return true;
+            }
+
+            if( DEBUG ) {
+                Slog.i(TAG,"AppAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            }
+            return false;
+        }
+
+        if( ((a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE)) != 0 || a.wakeup) && a.alarmClock == null ) {
+            synchronized (this) {
+                if( mThrottleAlarms ) {
+                    if( DEBUG ) {
+                        Slog.i(TAG,"AppAlarm: throttle IDLE alarm:" + a.statsTag + ":" + a.toStringLong());
+                    }
+                    a.flags &= ~(AlarmManager.FLAG_WAKE_FROM_IDLE 
+                    | AlarmManager.FLAG_ALLOW_WHILE_IDLE
+                    | AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED);
+                    a.wakeup = false;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean restrictAppIdleAlarm(AlarmManagerService.Alarm a) {
+        synchronized (this) {
+            if( !mThrottleAlarms ) {
+                return false;
+            }
+        }
+
+        boolean block = false;
+
+        if( a.packageName.startsWith("com.google.android.gms") ) {
+            block = true;
+        } else if( a.packageName.startsWith("com.google.android.wearable.app") ) {
+            if( a.statsTag.contains("com.google.android.clockwork.TIME_SYNC") || 
+                a.statsTag.contains("com.google.android.clockwork.TIME_ZONE_SYNC") ||
+                a.statsTag.contains("com.google.android.clockwork.calendar.action.REFRESH")) {
+                block = true;
+            }
+        }
+
+
+        if( (a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) == 0 ) {
+            block = true;
+        }
+
+        if( block ) {
+            a.flags &= ~(AlarmManager.FLAG_WAKE_FROM_IDLE 
+                    | AlarmManager.FLAG_ALLOW_WHILE_IDLE
+                    | AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED);
+            a.wakeup = false;
+            return true;
+        }
+        return false;
+    }
+
+
+    private boolean restrictSystemIdleAlarm(AlarmManagerService.Alarm a) {
+        synchronized (this) {
+            if( !mThrottleAlarms ) {
+                return false;
+            }
+        }
+
+        boolean block = false;
+
+        if( a.statsTag.contains("NETWORK_LINGER_COMPLETE") ||
+            a.statsTag.contains("*sync") ||
+            a.statsTag.contains("*job") || 
+            a.statsTag.contains("APPWIDGET_UPDATE") ||
+            a.statsTag.contains("com.android.server.NetworkTimeUpdateService.action.POLL") ||
+            a.statsTag.contains("WifiConnectivityManager Restart Scan") ) {
+
+            block = true;
+        }
+
+        if( block ) {
+            a.flags &= ~(AlarmManager.FLAG_WAKE_FROM_IDLE 
+                    | AlarmManager.FLAG_ALLOW_WHILE_IDLE
+                    | AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED);
+            a.wakeup = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean adjustAlarm(AlarmManagerService.Alarm a) {
+        if( !a.wakeup ) return false;
+        synchronized (this) {
+            if( !mThrottleAlarms ) {
+                return false;
+            }
+        }
+
+        if( a.statsTag.contains("com.qualcomm.qti.biometrics.fingerprint.service") ) {
+            a.when += 55*60*1000;
+            long whenElapsed = AlarmManagerService.convertToElapsed(a.when, a.type);
+            a.whenElapsed = whenElapsed;
+            a.maxWhenElapsed = whenElapsed;
+            a.origWhen = a.when;
+            Slog.i(TAG,"AppAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            return true;
+        }
+        if( a.statsTag.contains("WifiConnectivityManager Schedule Periodic Scan Timer") ) {
+            final long now = SystemClock.elapsedRealtime();
+            if( (a.when - now)  < 15*60*1000 ) {
+                a.when = a.whenElapsed = a.maxWhenElapsed = a.origWhen = now + 15*60*1000;
+            } 
+            Slog.i(TAG,"AppAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            return true;
+        }
+        return false;
     }
 
     public boolean isWakelockWhitelisted(PowerManagerService.WakeLock wakelock, int callingUid, String callingPackageName) {
