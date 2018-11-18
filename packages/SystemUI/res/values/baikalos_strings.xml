@@ -32,4 +32,7 @@
     <string name="screenshot_abort_title">No screenshot taken</string>
     <string name="screenshot_abort_text">Operation aborted.</string>
 
+    <!-- Screenrecord -->
+    <string name="quick_settings_screenrecord_label">Screenrecord</string>
+
 </resources>

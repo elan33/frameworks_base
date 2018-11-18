@@ -603,6 +603,9 @@
     <protected-broadcast android:name="android.intent.action.DOCK_IDLE" />
     <protected-broadcast android:name="android.intent.action.DOCK_ACTIVE" />
 
+    <!-- Screenrecord -->
+    <protected-broadcast android:name="org.omnirom.omnirecord.ACTION_START" />
+
     <!-- ====================================================================== -->
     <!--                          RUNTIME PERMISSIONS                           -->
     <!-- ====================================================================== -->

@@ -19,6 +19,8 @@ package com.android.internal.util.baikalos;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.UserHandle;
 import android.hardware.input.InputManager;
 import android.os.Handler;
@@ -84,6 +86,19 @@ public class BaikalOSUtils {
                         InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
             }
         }, 20);
+    }
+
+    public static boolean isAvailableApp(String packageName, Context context) {
+        Context mContext = context;
+        final PackageManager pm = mContext.getPackageManager();
+        try {
+            pm.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
+            int enabled = pm.getApplicationEnabledSetting(packageName);
+            return enabled != PackageManager.COMPONENT_ENABLED_STATE_DISABLED &&
+                enabled != PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER;
+        } catch (NameNotFoundException e) {
+            return false;
+        }
     }
 
     public static void goToSleep(Context context) {
