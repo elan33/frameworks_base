@@ -19,6 +19,7 @@ package android.media;
 import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources.NotFoundException;
 import android.database.Cursor;
@@ -26,10 +27,13 @@ import android.media.MediaPlayer.OnCompletionListener;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.provider.MediaStore.MediaColumns;
 import android.util.Log;
+
+import android.media.audiofx.AudioEffect;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -348,7 +352,9 @@ public class Ringtone {
             // (typically because ringer mode is silent).
             if (mAudioManager.getStreamVolume(
                     AudioAttributes.toLegacyStreamType(mAudioAttributes)) != 0) {
+
                 startLocalPlayer();
+                startAudioSession(mLocalPlayer.getAudioSessionId());
             }
         } else if (mAllowRemote && (mRemotePlayer != null)) {
             final Uri canonicalUri = mUri.getCanonicalUri();
@@ -389,6 +395,7 @@ public class Ringtone {
 
     private void destroyLocalPlayer() {
         if (mLocalPlayer != null) {
+            stopAudioSession(mLocalPlayer.getAudioSessionId());
             mLocalPlayer.setOnCompletionListener(null);
             mLocalPlayer.reset();
             mLocalPlayer.release();
@@ -494,4 +501,28 @@ public class Ringtone {
             mp.setOnCompletionListener(null); // Help the Java GC: break the refcount cycle.
         }
     }
+
+    private boolean mSessionStarted = false;
+    private void startAudioSession(int sessionId) {
+        if( !mSessionStarted ) {
+            mSessionStarted = true;
+            Log.d(TAG, "startAudioSession()");
+            final Intent intent = new Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
+            intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId);
+            intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, mContext.getPackageName());
+            intent.putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC);
+            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+        }
+    }
+
+    private void stopAudioSession(int sessionId) {
+        if( mSessionStarted ) {
+            Log.d(TAG, "stopAudioSession()");
+            final Intent intent = new Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
+            intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId);
+            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+            mSessionStarted = false;
+        }
+    }
+
 }
