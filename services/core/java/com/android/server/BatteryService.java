@@ -1074,6 +1074,8 @@ public final class BatteryService extends SystemService {
         private final int mBatteryFullARGB;
         private final int mBatteryLedOn;
         private final int mBatteryLedOff;
+        private final int mBatteryFastChargeARGB;
+        private final int mBatteryChargingARGB;
 
         public Led(Context context, LightsManager lights) {
             mBatteryLight = lights.getLight(LightsManager.LIGHT_ID_BATTERY);
@@ -1088,6 +1090,13 @@ public final class BatteryService extends SystemService {
                     com.android.internal.R.integer.config_notificationsBatteryLedOn);
             mBatteryLedOff = context.getResources().getInteger(
                     com.android.internal.R.integer.config_notificationsBatteryLedOff);
+
+            mBatteryFastChargeARGB = context.getResources().getInteger(
+                    com.android.internal.R.integer.config_notificationsBatteryFastChargeARGB);
+
+            mBatteryChargingARGB = context.getResources().getInteger(
+                    com.android.internal.R.integer.config_notificationsBatteryChargingARGB);
+
         }
 
         /**
@@ -1096,27 +1105,40 @@ public final class BatteryService extends SystemService {
         public void updateLightsLocked() {
             final int level = mHealthInfo.batteryLevel;
             final int status = mHealthInfo.batteryStatus;
-            if (level < mLowBatteryWarningLevel) {
-                if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
-                    // Solid red when battery is charging
-                    mBatteryLight.setColor(mBatteryLowARGB);
-                } else {
-                    // Flash red when battery is low and not charging
-                    mBatteryLight.setFlashing(mBatteryLowARGB, Light.LIGHT_FLASH_TIMED,
-                            mBatteryLedOn, mBatteryLedOff);
-                }
-            } else if (status == BatteryManager.BATTERY_STATUS_CHARGING
-                    || status == BatteryManager.BATTERY_STATUS_FULL) {
-                if (status == BatteryManager.BATTERY_STATUS_FULL || level >= 90) {
-                    // Solid green when full or charging and nearly full
-                    mBatteryLight.setColor(mBatteryFullARGB);
-                } else {
-                    // Solid orange when charging and halfway full
-                    mBatteryLight.setColor(mBatteryMediumARGB);
+
+            final boolean isFastCharge = ( (mHealthInfo.maxChargingCurrent/1000) * (mHealthInfo.maxChargingVoltage/1000) ) > 7500000;
+
+            if(status == BatteryManager.BATTERY_STATUS_CHARGING ) {
+                if( level == 100  && status == BatteryManager.BATTERY_STATUS_FULL ) {
+                        mBatteryLight.setColor(mBatteryFullARGB);
+                } else if (isFastCharge) {
+                        mBatteryLight.setColor(mBatteryFastChargeARGB);
+                } else if (level < mLowBatteryWarningLevel) {
+                    if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
+                        // Solid red when battery is charging
+                        mBatteryLight.setColor(mBatteryLowARGB);
+                    } else {
+                        // Flash red when battery is low and not charging
+                        mBatteryLight.setFlashing(mBatteryLowARGB, Light.LIGHT_FLASH_TIMED,
+                                mBatteryLedOn, mBatteryLedOff);
+                    }
+                } else if (status == BatteryManager.BATTERY_STATUS_CHARGING) {
+                    if (level >= 90) {
+                        // Solid green when full or charging and nearly full
+                        mBatteryLight.setColor(mBatteryChargingARGB);
+                    } else {
+                        // Solid orange when charging and halfway full
+                        mBatteryLight.setColor(mBatteryMediumARGB);
+                    }
                 }
             } else {
-                // No lights if not charging and not low
-                mBatteryLight.turnOff();
+                if (level < mLowBatteryWarningLevel && status != BatteryManager.BATTERY_STATUS_CHARGING ) {
+                        mBatteryLight.setFlashing(mBatteryLowARGB, Light.LIGHT_FLASH_TIMED,
+                                mBatteryLedOn, mBatteryLedOff);
+                } else {
+                    // No lights if not charging and not low
+                    mBatteryLight.turnOff();
+                }
             }
         }
     }
