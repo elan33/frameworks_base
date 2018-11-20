@@ -511,7 +511,7 @@ public class Ringtone {
             intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId);
             intent.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, mContext.getPackageName());
             intent.putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC);
-            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+            mContext.sendBroadcast(intent);
         }
     }
 
@@ -520,7 +520,7 @@ public class Ringtone {
             Log.d(TAG, "stopAudioSession()");
             final Intent intent = new Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
             intent.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId);
-            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+            mContext.sendBroadcast(intent);
             mSessionStarted = false;
         }
     }
