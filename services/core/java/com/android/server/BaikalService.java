@@ -43,6 +43,7 @@ import android.util.Slog;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import com.android.internal.os.BackgroundThread;
+import com.android.internal.util.ArrayUtils;
 import com.android.server.power.PowerManagerService;
 import com.android.server.power.PowerManagerService.WakeLock;
 import com.android.server.am.ServiceRecord;
@@ -68,6 +69,7 @@ import android.hardware.camera2.CameraManager;
 import android.provider.Settings;
 
 import java.util.List;
+import java.util.Arrays;
 
 
 public class BaikalService extends SystemService {
@@ -89,8 +91,12 @@ public class BaikalService extends SystemService {
     private boolean mActiveIncomingCall;
     private boolean mTorchEnabled;
 
-    private boolean mThrottleAlarms;
     private boolean mIdleAggressive;
+
+    private boolean mThrottleAlarms;
+    private boolean mQtiBiometricsInitialized;
+
+    private boolean mWlBlockEnabled;
 
     Thread mTorchThread = null;
 
@@ -151,8 +157,20 @@ public class BaikalService extends SystemService {
 
             mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
             mCameraManager.registerTorchCallback(new TorchModeCallback(), mHandler);
-        }
 
+
+            final PackageManager pm = getContext().getPackageManager();
+
+            try {
+                ApplicationInfo ai = pm.getApplicationInfo("com.google.android.gms",
+                       PackageManager.MATCH_ALL);
+                if( ai != null ) {
+                    setGmsUid(ai.uid);
+                }
+            } catch(Exception e) {
+                Slog.i(TAG,"onBootPhase(" + phase + "): Google Play Services not found on this device.");
+            }
+        }
     }
 
     public void setAlarmManagerService(AlarmManagerService service) {
@@ -178,7 +196,6 @@ public class BaikalService extends SystemService {
             mDeviceIdleController = service;
         }
     }
-
 
     @Override
     public void onSwitchUser(int userHandle) {
@@ -231,6 +248,10 @@ public class BaikalService extends SystemService {
             resolver.registerContentObserver(
                     Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_AGGRESSIVE_ENABLED),
                     false, this);
+
+            resolver.registerContentObserver(Settings.Global.getUriFor(
+                    Settings.Global.POWERSAVE_WL_BLOCK_ENABLED), false, this);
+
             } catch( Exception e ) {
             }
 
@@ -275,6 +296,10 @@ public class BaikalService extends SystemService {
                 mThrottleAlarms = Settings.Global.getInt(
                         mResolver, Settings.Global.POWERSAVE_THROTTLE_ALARMS_ENABLED, 
                         0) == 1;
+
+
+                mWlBlockEnabled = Settings.System.getInt(
+                        mResolver, Settings.Global.POWERSAVE_WL_BLOCK_ENABLED, 0) == 1;
 
                     //mParser.setString(Settings.Global.getString(mResolver,
                     //        Settings.Global.DEVICE_IDLE_CONSTANTS));
@@ -699,8 +724,22 @@ public class BaikalService extends SystemService {
         }
     }
 
-    public boolean setWakeLockDisabledState(WakeLock wakeLock) {
-        return false;
+    public boolean [] setWakeLockDisabledState(WakeLock wakeLock) {
+        boolean [] retval = new boolean[2];
+        retval[0] = false;
+        retval[1] = false;
+
+        synchronized (this) {
+            if( !mWlBlockEnabled ) {
+                retval[0] = true;
+                if( wakeLock.mDisabled ) {
+                    wakeLock.mDisabled = false;
+                    retval[1] = true;
+                }
+                return retval;
+            }
+        }
+        return retval;
     }
 
     public boolean throttleAlarms() {
@@ -788,7 +827,9 @@ public class BaikalService extends SystemService {
 
         boolean block = false;
 
-        if( a.packageName.startsWith("com.google.android.gms") ) {
+        if( a.alarmClock != null ) {
+
+        } else if( a.packageName.startsWith("com.google.android.gms") ) {
             block = true;
         } else if( a.packageName.startsWith("com.google.android.wearable.app") ) {
             if( a.statsTag.contains("com.google.android.clockwork.TIME_SYNC") || 
@@ -796,10 +837,8 @@ public class BaikalService extends SystemService {
                 a.statsTag.contains("com.google.android.clockwork.calendar.action.REFRESH")) {
                 block = true;
             }
-        }
-
-
-        if( (a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) == 0 ) {
+        } else if( ((a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) == 0) &&
+            (Arrays.binarySearch(mDeviceIdleWhitelist, a.uid) < 0) ) {
             block = true;
         }
 
@@ -831,7 +870,7 @@ public class BaikalService extends SystemService {
             a.statsTag.contains("WifiConnectivityManager Restart Scan") ) {
 
             block = true;
-        }
+        } 
 
         if( block ) {
             a.flags &= ~(AlarmManager.FLAG_WAKE_FROM_IDLE 
@@ -853,13 +892,17 @@ public class BaikalService extends SystemService {
         }
 
         if( a.statsTag.contains("com.qualcomm.qti.biometrics.fingerprint.service") ) {
-            a.when += 55*60*1000;
-            long whenElapsed = AlarmManagerService.convertToElapsed(a.when, a.type);
-            a.whenElapsed = whenElapsed;
-            a.maxWhenElapsed = whenElapsed;
-            a.origWhen = a.when;
-            Slog.i(TAG,"AppAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
-            return true;
+            if( mQtiBiometricsInitialized ) {
+                a.when += 55*60*1000;
+                long whenElapsed = AlarmManagerService.convertToElapsed(a.when, a.type);
+                a.whenElapsed = whenElapsed;
+                a.maxWhenElapsed = whenElapsed;
+                a.origWhen = a.when;
+                Slog.i(TAG,"AppAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+                return true;
+            } else {
+                mQtiBiometricsInitialized = true;
+            }
         }
         if( a.statsTag.contains("WifiConnectivityManager Schedule Periodic Scan Timer") ) {
             final long now = SystemClock.elapsedRealtime();
@@ -973,5 +1016,38 @@ public class BaikalService extends SystemService {
         }
     }
 
+    private static Object mStaticMembersLock = new Object();
+
+    private static int mGmsUid = -1;
+    static void setGmsUid(int uid) {
+        synchronized(mStaticMembersLock) {
+            mGmsUid = uid;
+        }
+    }
+
+
+    public static boolean isGmsUid(int uid) {
+        synchronized(mStaticMembersLock) {
+            return mGmsUid == uid;
+        }
+    }
+
+    public static boolean isGmsAppid(int appid) {
+        synchronized(mStaticMembersLock) {
+            return UserHandle.getAppId(mGmsUid) == appid;
+        }
+    }
+
+    public static int gmsAppid() {
+        synchronized(mStaticMembersLock) {
+            return UserHandle.getAppId(mGmsUid);
+        }
+    }
+
+    public static int gmsUid() {
+        synchronized(mStaticMembersLock) {
+            return mGmsUid;
+        }
+    }
 
 }

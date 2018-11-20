@@ -645,7 +645,8 @@ public final class PowerManagerService extends SystemService
                 try {
                     mParser.setString(Settings.Global.getString(mResolver,
                             Settings.Global.POWER_MANAGER_CONSTANTS));
-                } catch (IllegalArgumentException e) {
+
+                } catch (Exception e) {
                     // Failed to parse the settings string, log this and move on
                     // with defaults.
                     Slog.e(TAG, "Bad alarm manager settings", e);
@@ -2993,6 +2994,7 @@ public final class PowerManagerService extends SystemService
     }
 
     void setDeviceIdleWhitelistInternal(int[] appids) {
+        mBaikalService.setDeviceIdleWhitelist(appids);
         synchronized (mLock) {
             mDeviceIdleWhitelist = appids;
             if (mDeviceIdleMode) {
@@ -3002,6 +3004,7 @@ public final class PowerManagerService extends SystemService
     }
 
     void setDeviceIdleTempWhitelistInternal(int[] appids) {
+        mBaikalService.setDeviceIdleTempWhitelist(appids);
         synchronized (mLock) {
             mDeviceIdleTempWhitelist = appids;
             if (mDeviceIdleMode) {
@@ -3127,8 +3130,9 @@ public final class PowerManagerService extends SystemService
         if ((wakeLock.mFlags & PowerManager.WAKE_LOCK_LEVEL_MASK)
                 == PowerManager.PARTIAL_WAKE_LOCK) {
 
-            if( mBaikalService.setWakeLockDisabledState(wakeLock)) {
-                return true;
+            boolean [] retval = mBaikalService.setWakeLockDisabledState(wakeLock);
+            if( retval[0] ) {
+                return retval[1];
             }
 
             boolean disabled = false;

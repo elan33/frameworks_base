@@ -228,6 +228,7 @@ import com.android.server.EventLogTags;
 import com.android.server.LocalServices;
 import com.android.server.ServiceThread;
 import com.android.server.SystemConfig;
+import com.android.server.BaikalService;
 
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;
@@ -641,6 +642,11 @@ public class NetworkPolicyManagerService extends INetworkPolicyManager.Stub {
                 for (int uid : whitelist) {
                     mPowerSaveWhitelistAppIds.put(uid, true);
                 }
+            }
+            int gmsUid = BaikalService.gmsUid();
+            if( gmsUid != -1 ) {
+                mPowerSaveWhitelistExceptIdleAppIds.put(gmsUid, true);
+                mPowerSaveWhitelistAppIds.put(gmsUid, true);
             }
         } catch (RemoteException e) {
         }

@@ -1100,15 +1100,15 @@ public class AppStateTracker {
         synchronized (mLock) {
             // Whitelisted?
             final int appId = UserHandle.getAppId(uid);
-            if (ArrayUtils.contains(mPowerWhitelistedAllAppIds, appId)) {
-                return false;
-            }
             if (useTempWhitelistToo &&
                     ArrayUtils.contains(mTempWhitelistedAppIds, appId)) {
                 return false;
             }
             if (mForcedAppStandbyEnabled && isRunAnyRestrictedLocked(uid, packageName)) {
                 return true;
+            }
+            if (ArrayUtils.contains(mPowerWhitelistedAllAppIds, appId)) {
+                return false;
             }
             if (exemptOnBatterySaver) {
                 return false;

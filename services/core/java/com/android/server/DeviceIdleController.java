@@ -121,6 +121,7 @@ public class DeviceIdleController extends SystemService
     private ActivityManagerInternal mLocalActivityManager;
     private PowerManagerInternal mLocalPowerManager;
     private PowerManager mPowerManager;
+    private BaikalService mBaikalService;
     private ConnectivityService mConnectivityService;
     private INetworkPolicyManager mNetworkPolicyManager;
     private SensorManager mSensorManager;
@@ -1470,10 +1471,14 @@ public class DeviceIdleController extends SystemService
                 String pkg = allowPowerExceptIdle.valueAt(i);
                 try {
                     ApplicationInfo ai = pm.getApplicationInfo(pkg,
-                            PackageManager.MATCH_SYSTEM_ONLY);
+                            PackageManager.MATCH_ALL);
                     int appid = UserHandle.getAppId(ai.uid);
-                    mPowerSaveWhitelistAppsExceptIdle.put(ai.packageName, appid);
-                    mPowerSaveWhitelistSystemAppIdsExceptIdle.put(appid, true);
+                    if( !ai.packageName.startsWith("com.google.android.gms") &&
+                        !ai.packageName.startsWith("com.android.vending") ) {
+                        Slog.d(TAG, "Adding App " + appid + " to system whitelist. package: " + ai.packageName);
+                        mPowerSaveWhitelistAppsExceptIdle.put(ai.packageName, appid);
+                        mPowerSaveWhitelistSystemAppIdsExceptIdle.put(appid, true);
+                    }
                 } catch (PackageManager.NameNotFoundException e) {
                 }
             }
@@ -1482,14 +1487,18 @@ public class DeviceIdleController extends SystemService
                 String pkg = allowPower.valueAt(i);
                 try {
                     ApplicationInfo ai = pm.getApplicationInfo(pkg,
-                            PackageManager.MATCH_SYSTEM_ONLY);
+                            PackageManager.MATCH_ALL);
                     int appid = UserHandle.getAppId(ai.uid);
                     // These apps are on both the whitelist-except-idle as well
                     // as the full whitelist, so they apply in all cases.
-                    mPowerSaveWhitelistAppsExceptIdle.put(ai.packageName, appid);
-                    mPowerSaveWhitelistSystemAppIdsExceptIdle.put(appid, true);
-                    mPowerSaveWhitelistApps.put(ai.packageName, appid);
-                    mPowerSaveWhitelistSystemAppIds.put(appid, true);
+                    if( !ai.packageName.startsWith("com.google.android.gms") &&
+                        !ai.packageName.startsWith("com.android.vending") ) {
+                        Slog.d(TAG, "Adding App " + appid + " to system whitelist-except-idle. package: " + ai.packageName);
+                        mPowerSaveWhitelistAppsExceptIdle.put(ai.packageName, appid);
+                        mPowerSaveWhitelistSystemAppIdsExceptIdle.put(appid, true);
+                        mPowerSaveWhitelistApps.put(ai.packageName, appid);
+                        mPowerSaveWhitelistSystemAppIds.put(appid, true);
+                    }
                 } catch (PackageManager.NameNotFoundException e) {
                 }
             }
@@ -1568,6 +1577,10 @@ public class DeviceIdleController extends SystemService
                 mAnyMotionDetector = new AnyMotionDetector(
                         (PowerManager) getContext().getSystemService(Context.POWER_SERVICE),
                         mHandler, mSensorManager, this, angleThreshold);
+
+                mBaikalService = LocalServices.getService(BaikalService.class);
+                mBaikalService.setDeviceIdleController(this);
+
 
                 mAppStateTracker.onSystemServicesReady();
 
@@ -1906,7 +1919,7 @@ public class DeviceIdleController extends SystemService
         boolean informWhitelistChanged = false;
         synchronized (this) {
             int callingAppId = UserHandle.getAppId(callingUid);
-            if (callingAppId >= Process.FIRST_APPLICATION_UID) {
+            if (callingAppId >= Process.FIRST_APPLICATION_UID && !BaikalService.isGmsAppid(callingAppId)) {
                 if (!mPowerSaveWhitelistSystemAppIds.get(callingAppId)) {
                     throw new SecurityException("Calling app " + UserHandle.formatUid(callingUid)
                             + " is not on whitelist");
