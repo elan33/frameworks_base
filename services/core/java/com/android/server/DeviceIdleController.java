@@ -1627,6 +1627,14 @@ public class DeviceIdleController extends SystemService
             try {
                 ApplicationInfo ai = getContext().getPackageManager().getApplicationInfo(name,
                         PackageManager.MATCH_ANY_USER);
+
+                if( !ai.packageName.startsWith("com.google.android.gms") &&
+                    !ai.packageName.startsWith("com.android.vending") ) {
+                    if (DEBUG) {
+                        Slog.d(TAG, "addPowerSaveWhitelistAppInternal: name=" + name, new Throwable());
+                    }
+                    return false;
+                }
                 if (mPowerSaveWhitelistUserApps.put(name, UserHandle.getAppId(ai.uid)) == null) {
                     reportPowerSaveWhitelistChangedLocked();
                     updateWhitelistAppIdsLocked();
@@ -1698,6 +1706,15 @@ public class DeviceIdleController extends SystemService
             try {
                 final ApplicationInfo ai = getContext().getPackageManager().getApplicationInfo(name,
                         PackageManager.MATCH_ANY_USER);
+
+                if( !ai.packageName.startsWith("com.google.android.gms") &&
+                    !ai.packageName.startsWith("com.android.vending") ) {
+                    if (DEBUG) {
+                        Slog.d(TAG, "addPowerSaveWhitelistExceptIdleInternal: name=" + name, new Throwable());
+                    }
+                    return false;
+                }
+
                 if (mPowerSaveWhitelistAppsExceptIdle.put(name, UserHandle.getAppId(ai.uid))
                         == null) {
                     mPowerSaveWhitelistUserAppsExceptIdle.add(name);
