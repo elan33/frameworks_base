@@ -74,6 +74,7 @@ public class PowerWhitelistBackend {
             return true;
         }
 
+        if( pkg.equals("com.google.android.gms") ) return false;
         // Additionally, check if pkg is default dialer/sms. They are considered essential apps and
         // should be automatically whitelisted (otherwise user may be able to set restriction on
         // them, leading to bad device behavior.)
