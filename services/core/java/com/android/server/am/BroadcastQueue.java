@@ -863,6 +863,24 @@ public final class BroadcastQueue {
                 if (DEBUG_BROADCAST)  Slog.v(TAG_BROADCAST,
                         "Delivering non-ordered on [" + mQueueName + "] to registered "
                         + target + ": " + r);
+
+
+                int allowed = ActivityManager.APP_START_MODE_NORMAL;
+
+                if( mService.mBaikalService != null ) {
+                    if( mService.mBaikalService.isBroadcastFilterWhitelisted(r, (BroadcastFilter)target) ) {
+                        allowed = ActivityManager.APP_START_MODE_NORMAL;
+                    } else if( mService.mBaikalService.isBroadcastFilterBlacklisted(r, (BroadcastFilter)target) ) {
+                        allowed = ActivityManager.APP_START_MODE_DELAYED;
+                    }
+                }
+
+                if( mService.mBaikalService != null ) {
+                    BroadcastFilter filter = (BroadcastFilter)target;
+                    //mService.mBaikalService.noteRestrictionStatistics(true, "broadcast_filter", r.callerPackage, r.callingUid , r.callingPid, 
+                    //        filter.packageName,filter.owningUid, -1, r.intent.toString());
+                }
+
                 deliverToRegisteredReceiverLocked(r, (BroadcastFilter)target, false, i);
             }
             addBroadcastToHistoryLocked(r);
@@ -1261,16 +1279,32 @@ public final class BroadcastQueue {
                 info.activityInfo.applicationInfo.uid, false);
 
         if (!skip) {
-            final int allowed = mService.getAppStartModeLocked(
+            int allowed = mService.getAppStartModeLocked(
                     info.activityInfo.applicationInfo.uid, info.activityInfo.packageName,
-                    info.activityInfo.applicationInfo.targetSdkVersion, -1, true, false, false);
+                    info.activityInfo.applicationInfo.targetSdkVersion, -1, true, false, mService.mDeviceIdleMode);
+
+            if( mService.mBaikalService != null ) {
+                if( mService.mBaikalService.isBroadcastWhitelisted(r, info) ) {
+                    allowed = ActivityManager.APP_START_MODE_NORMAL;
+                } else if( mService.mBaikalService.isBroadcastBlacklisted(r, info) ) {
+                    allowed = ActivityManager.APP_START_MODE_DELAYED;
+                }
+            }
+
             if (allowed != ActivityManager.APP_START_MODE_NORMAL) {
+
+
                 // We won't allow this receiver to be launched if the app has been
                 // completely disabled from launches, or it was not explicitly sent
                 // to it and the app is in a state that should not receive it
                 // (depending on how getAppStartModeLocked has determined that).
                 if (allowed == ActivityManager.APP_START_MODE_DISABLED) {
                     Slog.w(TAG, "Background execution disabled: receiving "
+                            + r.intent + " to "
+                            + component.flattenToShortString());
+                    skip = true;
+                } else if (allowed == ActivityManager.APP_START_MODE_DELAYED) {
+                    Slog.w(TAG, "Background execution deleayed: receiving "
                             + r.intent + " to "
                             + component.flattenToShortString());
                     skip = true;
@@ -1286,6 +1320,15 @@ public final class BroadcastQueue {
                             + r.intent + " to "
                             + component.flattenToShortString());
                     skip = true;
+                }
+            }
+            if( mService.mBaikalService != null ) {
+                if( skip ) {
+                   mService.mBaikalService.noteRestrictionStatistics(false, "broadcast", r.callerPackage, r.callingUid , r.callingPid, 
+                            info.activityInfo.packageName,info.activityInfo.applicationInfo.uid, -1, r.intent.toString());
+                } else {
+                    mService.mBaikalService.noteRestrictionStatistics(true, "broadcast", r.callerPackage, r.callingUid , r.callingPid, 
+                            info.activityInfo.packageName,info.activityInfo.applicationInfo.uid, -1, r.intent.toString());
                 }
             }
         }

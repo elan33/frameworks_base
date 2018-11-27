@@ -437,11 +437,11 @@ public final class ActiveServices {
         // start analogously to the legacy-app forced-restrictions case, regardless
         // of its target SDK version.
         boolean forcedStandby = false;
-        if (bgLaunch && appRestrictedAnyInBackground(r.appInfo.uid, r.packageName)) {
-            if (DEBUG_FOREGROUND_SERVICE) {
+        if (mAm.mOnBattery && /*bgLaunch && */appRestrictedAnyInBackground(r.appInfo.uid, r.packageName)) {
+            //if (DEBUG_FOREGROUND_SERVICE) {
                 Slog.d(TAG, "Forcing bg-only service start only for " + r.shortName
                         + " : bgLaunch=" + bgLaunch + " callerFg=" + callerFg);
-            }
+            //}
             forcedStandby = true;
         }
 
@@ -470,14 +470,32 @@ public final class ActiveServices {
             }
         }
 
+        Slog.i(TAG, "Background start check: " + r + ", forcedStandby=" + forcedStandby + ", r.sR=" + r.startRequested + ", fgR="  + fgRequired);
+
         // If this isn't a direct-to-foreground start, check our ability to kick off an
         // arbitrary service
-        if (forcedStandby || (!r.startRequested && !fgRequired)) {
+        if (mAm.mOnBattery && (forcedStandby || (!r.startRequested && !fgRequired) ) ) {
             // Before going further -- if this app is not allowed to start services in the
             // background, then at this point we aren't going to let it period.
-            final int allowed = mAm.getAppStartModeLocked(r.appInfo.uid, r.packageName,
+            int allowed = mAm.getAppStartModeLocked(r.appInfo.uid, r.packageName,
                     r.appInfo.targetSdkVersion, callingPid, false, false, forcedStandby);
+
+
+            if( mAm.mBaikalService != null ) {
+                if( mAm.mBaikalService.isServiceWhitelisted(r, callingUid, callingPid, callingPackage, true) ) {
+                    allowed = ActivityManager.APP_START_MODE_NORMAL;
+                } else if( mAm.mBaikalService.isServiceBlacklisted(r, callingUid, callingPid, callingPackage, true) ) {
+                    allowed = ActivityManager.APP_START_MODE_DELAYED;
+                }
+            }
+
             if (allowed != ActivityManager.APP_START_MODE_NORMAL) {
+
+                if( mAm.mBaikalService != null ) {
+                    mAm.mBaikalService.noteRestrictionStatistics(false, "service", callingPackage, callingUid , callingPid, 
+                            r.packageName,r.appInfo.uid, r.app != null? r.app.pid : -1, r.name.getClassName());
+                }
+
                 Slog.w(TAG, "Background start not allowed: service "
                         + service + " to " + r.name.flattenToShortString()
                         + " from pid=" + callingPid + " uid=" + callingUid
@@ -485,6 +503,7 @@ public final class ActiveServices {
                 if (allowed == ActivityManager.APP_START_MODE_DELAYED || forceSilentAbort) {
                     // In this case we are silently disabling the app, to disrupt as
                     // little as possible existing apps.
+                    r.stopIfKilled = true;
                     return null;
                 }
                 if (forcedStandby) {
@@ -495,6 +514,7 @@ public final class ActiveServices {
                         if (DEBUG_BACKGROUND_CHECK) {
                             Slog.v(TAG, "Silently dropping foreground service launch due to FAS");
                         }
+                        r.stopIfKilled = true;
                         return null;
                     }
                 }
@@ -502,6 +522,11 @@ public final class ActiveServices {
                 // allowed, so tell it what has happened.
                 UidRecord uidRec = mAm.mActiveUids.get(r.appInfo.uid);
                 return new ComponentName("?", "app is in background uid " + uidRec);
+            }
+        }  else {
+            if( mAm.mBaikalService != null ) {
+                mAm.mBaikalService.noteRestrictionStatistics(true, "service", callingPackage, callingUid , callingPid, 
+                            r.packageName,r.appInfo.uid, r.app != null? r.app.uid : -1, r.name.getClassName());
             }
         }
 
@@ -759,9 +784,25 @@ public final class ActiveServices {
             for (int i=services.mServicesByName.size()-1; i>=0; i--) {
                 ServiceRecord service = services.mServicesByName.valueAt(i);
                 if (service.appInfo.uid == uid && service.startRequested) {
-                    if (mAm.getAppStartModeLocked(service.appInfo.uid, service.packageName,
-                            service.appInfo.targetSdkVersion, -1, false, false, false)
-                            != ActivityManager.APP_START_MODE_NORMAL) {
+
+                    int allowed = mAm.getAppStartModeLocked(service.appInfo.uid, service.packageName,
+                            service.appInfo.targetSdkVersion, -1, false, false, mAm.mDeviceIdleMode);
+                            
+                    if( mAm.mBaikalService != null ) {
+                        if( mAm.mBaikalService.isServiceWhitelisted(service, uid, service.app.pid, service.packageName, false) ) {
+                            allowed = ActivityManager.APP_START_MODE_NORMAL;
+                        } else if( mAm.mBaikalService.isServiceBlacklisted(service, uid, service.app.pid, service.packageName, false) ) {
+                            allowed = ActivityManager.APP_START_MODE_DELAYED;
+                        }
+                    }
+
+                    if ( allowed != ActivityManager.APP_START_MODE_NORMAL ) {
+
+                        if( mAm.mBaikalService != null ) {
+                            mAm.mBaikalService.noteRestrictionStatistics(false, "service", "device_idle", -1 , -1, 
+                                service.packageName,service.appInfo.uid, service.app != null? service.app.pid : -1, service.name.getClassName());
+                        }
+
                         if (stopping == null) {
                             stopping = new ArrayList<>();
                         }
@@ -784,8 +825,12 @@ public final class ActiveServices {
                 for (int i=stopping.size()-1; i>=0; i--) {
                     ServiceRecord service = stopping.get(i);
                     service.delayed = false;
+                    service.stopIfKilled = true;
                     services.ensureNotStartingBackgroundLocked(service);
-                    stopServiceLocked(service);
+                    try {
+                        stopServiceLocked(service);
+                    } catch(Exception e) {
+                    }
                 }
             }
         }
@@ -2115,6 +2160,12 @@ public final class ActiveServices {
         if (mAm.isShuttingDownLocked()) {
             Slog.w(TAG, "Not scheduling restart of crashed service " + r.shortName
                     + " - system is shutting down");
+            return false;
+        }
+
+        if( r.stopIfKilled ) {
+            Slog.w(TAG, "Not scheduling restart of crashed service " + r.shortName
+                    + " - stopIfKilled");
             return false;
         }
 
@@ -3656,15 +3707,17 @@ public final class ActiveServices {
             }
             if (timeout != null && mAm.mLruProcesses.contains(proc)) {
                 Slog.w(TAG, "Timeout executing service: " + timeout);
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new FastPrintWriter(sw, false, 1024);
-                pw.println(timeout);
-                timeout.dump(pw, "    ");
-                pw.close();
-                mLastAnrDump = sw.toString();
-                mAm.mHandler.removeCallbacks(mLastAnrDumpClearer);
-                mAm.mHandler.postDelayed(mLastAnrDumpClearer, LAST_ANR_LIFETIME_DURATION_MSECS);
-                anrMessage = "executing service " + timeout.shortName;
+                if( !timeout.stopIfKilled ) {
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new FastPrintWriter(sw, false, 1024);
+                    pw.println(timeout);
+                    timeout.dump(pw, "    ");
+                    pw.close();
+                    mLastAnrDump = sw.toString();
+                    mAm.mHandler.removeCallbacks(mLastAnrDumpClearer);
+                    mAm.mHandler.postDelayed(mLastAnrDumpClearer, LAST_ANR_LIFETIME_DURATION_MSECS);
+                    anrMessage = "executing service " + timeout.shortName;
+                }
             } else {
                 Message msg = mAm.mHandler.obtainMessage(
                         ActivityManagerService.SERVICE_TIMEOUT_MSG);

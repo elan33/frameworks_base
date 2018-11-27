@@ -228,7 +228,7 @@ import com.android.server.EventLogTags;
 import com.android.server.LocalServices;
 import com.android.server.ServiceThread;
 import com.android.server.SystemConfig;
-import com.android.server.BaikalService;
+import com.android.server.am.BaikalService;
 
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;

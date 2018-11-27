@@ -714,6 +714,8 @@ public class ActivityManagerService extends IActivityManager.Stub
     // VR Vr2d Display Id.
     int mVr2dDisplayId = INVALID_DISPLAY;
 
+    BaikalService mBaikalService;
+
     // Whether we should use SCHED_FIFO for UI and RenderThreads.
     private boolean mUseFifoUiScheduling = false;
 
@@ -8023,6 +8025,10 @@ public class ActivityManagerService extends IActivityManager.Stub
             mCallFinishBooting = false;
         }
 
+        mBaikalService = LocalServices.getService(BaikalService.class);
+        mBaikalService.setActivityManagerService(this, mAppOpsService);
+
+
         ArraySet<String> completedIsas = new ArraySet<String>();
         for (String abi : Build.SUPPORTED_ABIS) {
             zygoteProcess.establishZygoteConnectionForAbi(abi);
@@ -9316,6 +9322,15 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     // Unified app-op and target sdk check
     int appRestrictedInBackgroundLocked(int uid, String packageName, int packageTargetSdk) {
+
+        if (isOnDeviceIdleWhitelistLocked(uid, /*allowExceptIdleToo=*/ false)) {
+            if (DEBUG_BACKGROUND_CHECK) {
+                Slog.i(TAG, "App " + uid + "/" + packageName
+                        + " on idle whitelist; not restricted in background");
+            }
+            return ActivityManager.APP_START_MODE_NORMAL;
+        }
+
         // Apps that target O+ are always subject to background check
         if (packageTargetSdk >= Build.VERSION_CODES.O) {
             if (DEBUG_BACKGROUND_CHECK) {
@@ -25189,34 +25204,42 @@ public class ActivityManagerService extends IActivityManager.Stub
             if (!app.killedByAm && app.thread != null) {
                 applyOomAdjLocked(app, true, now, nowElapsed);
 
-                // Count the number of process types.
-                switch (app.curProcState) {
-                    case ActivityManager.PROCESS_STATE_CACHED_ACTIVITY:
-                    case ActivityManager.PROCESS_STATE_CACHED_ACTIVITY_CLIENT:
-                        mNumCachedHiddenProcs++;
-                        numCached++;
-                        if (numCached > cachedProcessLimit) {
-                            app.kill("cached #" + numCached, true);
-                        }
-                        break;
-                    case ActivityManager.PROCESS_STATE_CACHED_EMPTY:
-                        if (numEmpty > mConstants.CUR_TRIM_EMPTY_PROCESSES
-                                && app.lastActivityTime < oldTime) {
-                            app.kill("empty for "
-                                    + ((oldTime + ProcessList.MAX_EMPTY_TIME - app.lastActivityTime)
-                                    / 1000) + "s", true);
-                        } else {
-                            numEmpty++;
-                            if (numEmpty > emptyProcessLimit) {
-                                app.kill("empty #" + numEmpty, true);
-                            }
-                        }
-                        break;
-                    default:
-                        mNumNonCachedProcs++;
-                        break;
+                boolean kill = false;
+                if( mBaikalService != null ) {
+                    kill = mBaikalService.killByOOM(app, TOP_APP);
                 }
+                if( kill ) {
+                    app.kill("by baikalos service", true);
+                } else {
 
+                    // Count the number of process types.
+                    switch (app.curProcState) {
+                        case ActivityManager.PROCESS_STATE_CACHED_ACTIVITY:
+                        case ActivityManager.PROCESS_STATE_CACHED_ACTIVITY_CLIENT:
+                            mNumCachedHiddenProcs++;
+                            numCached++;
+                            if (numCached > cachedProcessLimit) {
+                                app.kill("cached #" + numCached, true);
+                            }
+                            break;
+                        case ActivityManager.PROCESS_STATE_CACHED_EMPTY:
+                            if (numEmpty > mConstants.CUR_TRIM_EMPTY_PROCESSES
+                                    && app.lastActivityTime < oldTime) {
+                                app.kill("empty for "
+                                        + ((oldTime + ProcessList.MAX_EMPTY_TIME - app.lastActivityTime)
+                                        / 1000) + "s", true);
+                            } else {
+                                numEmpty++;
+                                if (numEmpty > emptyProcessLimit) {
+                                    app.kill("empty #" + numEmpty, true);
+                                }
+                            }
+                            break;
+                        default:
+                            mNumNonCachedProcs++;
+                            break;
+                    }
+                }
                 if (app.isolated && app.services.size() <= 0 && app.isolatedEntryPoint == null) {
                     // If this is an isolated process, there are no services
                     // running in it, and it's not a special process with a
@@ -27318,6 +27341,27 @@ public class ActivityManagerService extends IActivityManager.Stub
             } finally {
                 Binder.restoreCallingIdentity(origId);
             }
+        }
+    }
+
+    boolean mDeviceIdleMode;
+    public void setDeviceIdleMode(boolean enabled) {
+        synchronized (this) {
+            if( mDeviceIdleMode != enabled ) {
+                mDeviceIdleMode = enabled;
+                if( mDeviceIdleMode ) {
+                    stopServicesOnDeviceIdle();
+                }
+            }
+        }        
+    }
+
+    public void stopServicesOnDeviceIdle() {
+        synchronized (this) {
+            for (int i=mActiveUids.size()-1; i>=0; i--) {
+                final UidRecord uidRec = mActiveUids.valueAt(i);
+                mServices.stopInBackgroundLocked(uidRec.uid);
+            }       
         }
     }
 }

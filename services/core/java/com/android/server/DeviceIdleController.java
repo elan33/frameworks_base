@@ -86,6 +86,7 @@ import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.Preconditions;
 import com.android.internal.util.XmlUtils;
 import com.android.server.am.BatteryStatsService;
+import com.android.server.am.BaikalService;
 import com.android.server.net.NetworkPolicyManagerInternal;
 
 import org.xmlpull.v1.XmlPullParser;

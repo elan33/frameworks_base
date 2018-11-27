@@ -90,6 +90,7 @@ import com.android.internal.util.DumpUtils;
 import com.android.internal.util.LocalLog;
 import com.android.internal.util.StatLogger;
 import com.android.server.AppStateTracker.Listener;
+import com.android.server.am.BaikalService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
@@ -116,7 +117,7 @@ import java.util.function.Predicate;
  * Unit test:
  atest $ANDROID_BUILD_TOP/frameworks/base/services/tests/servicestests/src/com/android/server/AlarmManagerServiceTest.java
  */
-class AlarmManagerService extends SystemService {
+public class AlarmManagerService extends SystemService {
     private static final int RTC_WAKEUP_MASK = 1 << RTC_WAKEUP;
     private static final int RTC_MASK = 1 << RTC;
     private static final int ELAPSED_REALTIME_WAKEUP_MASK = 1 << ELAPSED_REALTIME_WAKEUP;
@@ -742,7 +743,7 @@ class AlarmManagerService extends SystemService {
         publishLocalService(AlarmManagerInternal.class, new LocalService());
     }
 
-    protected static long convertToElapsed(long when, int type) {
+    public static long convertToElapsed(long when, int type) {
         final boolean isRtc = (type == RTC || type == RTC_WAKEUP);
         if (isRtc) {
             when -= System.currentTimeMillis() - SystemClock.elapsedRealtime();
@@ -3231,7 +3232,7 @@ class AlarmManagerService extends SystemService {
     }
 
     @VisibleForTesting
-    static class Alarm {
+    public static class Alarm {
         public int type;
         public long origWhen;
         public boolean wakeup;
