@@ -107,7 +107,7 @@ import com.android.server.power.batterysaver.BatterySaverController;
 import com.android.server.power.batterysaver.BatterySaverStateMachine;
 import com.android.server.power.batterysaver.BatterySavingStats;
 import com.android.server.LocalServices;
-import com.android.server.BaikalService;
+import com.android.server.am.BaikalService;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -721,6 +721,7 @@ public final class PowerManagerService extends SystemService
             mHalInteractiveModeEnabled = true;
 
             mWakefulness = WAKEFULNESS_AWAKE;
+            SystemPropertiesSet("power.wakefulness", Integer.toString(mWakefulness));
 
             sQuiescent = SystemProperties.get(SYSTEM_PROPERTY_QUIESCENT, "0").equals("1");
 
@@ -1639,6 +1640,7 @@ public final class PowerManagerService extends SystemService
             if (mNotifier != null) {
                 mNotifier.onWakefulnessChangeStarted(wakefulness, reason);
             }
+            SystemPropertiesSet("power.wakefulness",Integer.toString(mWakefulness));
         }
     }
 
@@ -2498,6 +2500,10 @@ public final class PowerManagerService extends SystemService
                 | DIRTY_ACTUAL_DISPLAY_POWER_STATE_UPDATED | DIRTY_BOOT_COMPLETED
                 | DIRTY_SETTINGS | DIRTY_SCREEN_BRIGHTNESS_BOOST | DIRTY_VR_MODE_CHANGED |
                 DIRTY_QUIESCENT)) != 0) {
+
+
+            DisplayPowerRequest mPrevDisplayPowerRequest = mDisplayPowerRequest;
+
             mDisplayPowerRequest.policy = getDesiredScreenPolicyLocked();
 
             // Determine appropriate screen brightness and auto-brightness adjustments.
@@ -2543,6 +2549,7 @@ public final class PowerManagerService extends SystemService
                 mDisplayPowerRequest.dozeScreenBrightness = PowerManager.BRIGHTNESS_DEFAULT;
             }
 
+            onDisplayPowerRequest(mDisplayPowerRequest, mPrevDisplayPowerRequest); 
             mDisplayReady = mDisplayManagerInternal.requestPowerState(mDisplayPowerRequest,
                     mRequestWaitForNegativeProximity);
             mRequestWaitForNegativeProximity = false;
@@ -2566,6 +2573,12 @@ public final class PowerManagerService extends SystemService
         }
         return mDisplayReady && !oldDisplayReady;
     }
+
+    private void onDisplayPowerRequest(DisplayPowerRequest newReq, DisplayPowerRequest oldReq) {
+        if( newReq.policy != oldReq.policy ) {
+            SystemPropertiesSet("power.screen_state",Integer.toString(newReq.policy));
+        }
+    } 
 
     private void updateScreenBrightnessBoostLocked(int dirty) {
         if ((dirty & DIRTY_SCREEN_BRIGHTNESS_BOOST) != 0) {
@@ -2735,10 +2748,12 @@ public final class PowerManagerService extends SystemService
         if (needWakeLockSuspendBlocker && !mHoldingWakeLockSuspendBlocker) {
             mWakeLockSuspendBlocker.acquire();
             mHoldingWakeLockSuspendBlocker = true;
+            SystemPropertiesSet("power.wake_lock","1");
         }
         if (needDisplaySuspendBlocker && !mHoldingDisplaySuspendBlocker) {
             mDisplaySuspendBlocker.acquire();
             mHoldingDisplaySuspendBlocker = true;
+            SystemPropertiesSet("power.wake_display","1");
         }
 
         // Inform the power HAL about interactive mode.
@@ -2761,10 +2776,12 @@ public final class PowerManagerService extends SystemService
         if (!needWakeLockSuspendBlocker && mHoldingWakeLockSuspendBlocker) {
             mWakeLockSuspendBlocker.release();
             mHoldingWakeLockSuspendBlocker = false;
+            SystemPropertiesSet("power.wake_lock","0");
         }
         if (!needDisplaySuspendBlocker && mHoldingDisplaySuspendBlocker) {
             mDisplaySuspendBlocker.release();
             mHoldingDisplaySuspendBlocker = false;
+            SystemPropertiesSet("power.wake_display","0");
         }
 
         // Enable auto-suspend if needed.
@@ -2968,6 +2985,7 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setDeviceIdleModeInternal(boolean enabled) {
+        mBaikalService.setDeviceIdleMode(enabled);
         synchronized (mLock) {
             if (mDeviceIdleMode == enabled) {
                 return false;
@@ -2984,6 +3002,7 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setLightDeviceIdleModeInternal(boolean enabled) {
+        mBaikalService.setLightDeviceIdleMode(enabled);
         synchronized (mLock) {
             if (mLightDeviceIdleMode != enabled) {
                 mLightDeviceIdleMode = enabled;
@@ -5021,4 +5040,15 @@ public final class PowerManagerService extends SystemService
                    mProximitySensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
     }
+
+    private void SystemPropertiesSet(String key, String value) {
+        Slog.d(TAG, "SystemProperties.set("+key+","+value+")");
+        try {
+            SystemProperties.set(key,value);
+        }
+        catch( Exception e ) {
+            Slog.e(TAG, "SystemPropertiesSet: unable to set property "+key+" to "+value);
+        }
+    }
+
 }
