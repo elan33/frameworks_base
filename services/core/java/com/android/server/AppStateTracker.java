@@ -35,6 +35,7 @@ import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.PowerManager.ServiceType;
 import android.os.PowerManagerInternal;
 import android.os.RemoteException;
@@ -58,6 +59,8 @@ import com.android.internal.util.Preconditions;
 import com.android.internal.util.StatLogger;
 import com.android.server.ForceAppStandbyTrackerProto.ExemptedPackage;
 import com.android.server.ForceAppStandbyTrackerProto.RunAnyInBackgroundRestrictedPackages;
+import com.android.server.am.BaikalService;
+
 
 import java.io.PrintWriter;
 import java.util.Arrays;
@@ -91,6 +94,7 @@ public class AppStateTracker {
     PowerManagerInternal mPowerManagerInternal;
     StandbyTracker mStandbyTracker;
     UsageStatsManagerInternal mUsageStatsManagerInternal;
+    BaikalService mBaikalService;
 
     private final MyHandler mHandler;
 
@@ -146,6 +150,12 @@ public class AppStateTracker {
 
     @GuardedBy("mLock")
     boolean mBatterySaverEnabled;
+
+    @GuardedBy("mLock")
+    boolean mDeviceIdleMode;
+
+    @GuardedBy("mLock")
+    boolean mAggressiveDeviceIdleMode;
 
     /**
      * True if the forced app standby is currently enabled
@@ -432,6 +442,8 @@ public class AppStateTracker {
             mStandbyTracker = new StandbyTracker();
             mUsageStatsManagerInternal.addAppIdleStateChangeListener(mStandbyTracker);
 
+            mBaikalService = LocalServices.getService(BaikalService.class);
+
             try {
                 mIActivityManager.registerUidObserver(new UidObserver(),
                         ActivityManager.UID_OBSERVER_GONE
@@ -463,6 +475,21 @@ public class AppStateTracker {
 
             mBatterySaverEnabled = mPowerManagerInternal.getLowPowerState(
                     ServiceType.FORCE_ALL_APPS_STANDBY).batterySaverEnabled;
+
+            IntentFilter idleFilter = new IntentFilter();
+    	    idleFilter.addAction(PowerManager.ACTION_DEVICE_IDLE_MODE_CHANGED);
+            mContext.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    synchronized (mLock) {
+    	                mDeviceIdleMode = mBaikalService.isDeviceIdleMode();
+                        mAggressiveDeviceIdleMode = mBaikalService.isAggressiveDeviceIdleMode();
+                        Slog.v(TAG, "DeviceIdleMode changed :" + mDeviceIdleMode + "/" + mAggressiveDeviceIdleMode);
+                        updateForceAllAppStandbyState();
+                    }
+    		    }
+            }, idleFilter);
+
 
             updateForceAllAppStandbyState();
         }
@@ -544,7 +571,7 @@ public class AppStateTracker {
             if (mForceAllAppStandbyForSmallBattery && isSmallBatteryDevice()) {
                 toggleForceAllAppsStandbyLocked(!mIsPluggedIn);
             } else {
-                toggleForceAllAppsStandbyLocked(mBatterySaverEnabled);
+                toggleForceAllAppsStandbyLocked( !mIsPluggedIn && (mBatterySaverEnabled || mAggressiveDeviceIdleMode ));
             }
         }
     }
@@ -558,6 +585,8 @@ public class AppStateTracker {
             return;
         }
         mForceAllAppsStandby = enable;
+
+        Slog.v(TAG, "mForceAllAppsStandby changed :" + enable, new Throwable());
 
         mHandler.notifyForceAllAppsStandbyChanged();
     }
