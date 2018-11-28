@@ -1794,9 +1794,9 @@ public final class DisplayManagerService extends SystemService {
 
         @Override // Binder call
         public void requestColorMode(int displayId, int colorMode) {
-            mContext.enforceCallingOrSelfPermission(
-                    Manifest.permission.CONFIGURE_DISPLAY_COLOR_MODE,
-                    "Permission required to change the display color mode");
+            //mContext.enforceCallingOrSelfPermission(
+            //        Manifest.permission.CONFIGURE_DISPLAY_COLOR_MODE,
+            //        "Permission required to change the display color mode");
             final long token = Binder.clearCallingIdentity();
             try {
                 requestColorModeInternal(displayId, colorMode);
@@ -1807,9 +1807,9 @@ public final class DisplayManagerService extends SystemService {
 
         @Override // Binder call
         public void setSaturationLevel(float level) {
-            mContext.enforceCallingOrSelfPermission(
-                   Manifest.permission.CONTROL_DISPLAY_SATURATION,
-                   "Permission required to set display saturation level");
+            //mContext.enforceCallingOrSelfPermission(
+            //       Manifest.permission.CONTROL_DISPLAY_SATURATION,
+            //       "Permission required to set display saturation level");
             final long token = Binder.clearCallingIdentity();
             try {
                 setSaturationLevelInternal(level);
