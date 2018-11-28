@@ -11278,31 +11278,56 @@ public final class Settings {
          */
         public static final String DEVICE_IDLE_CONSTANTS = "device_idle_constants";
 
-        /**
-         * @hide
-         */
+
+        /* BaikalOS Settings */
+
+        /** @hide */
         public static final String DEVICE_IDLE_AGGRESSIVE_ENABLED = "device_idle_aggressive_enabled";
 
         /** @hide */
         private static final Validator DEVICE_IDLE_AGGRESSIVE_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
-        /**
-         * @hide
-         */
+        /** @hide */
         public static final String POWERSAVE_WL_BLOCK_ENABLED = "powersave_wl_block_enabled";
 
         /** @hide */
         private static final Validator POWERSAVE_WL_BLOCK_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
-        /**
-         * @hide
-         */
+        /** @hide */
         public static final String POWERSAVE_THROTTLE_ALARMS_ENABLED = "powersave_throttle_alarms_enabled";
 
         /** @hide */
         private static final Validator POWERSAVE_THROTTLE_ALARMS_ENABLED_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String POWERSAVE_BLOCK_GMS1_ENABLED = "powersave_block_gms1_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_BLOCK_GMS1_ENABLED_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String POWERSAVE_BLOCK_GMS2_ENABLED = "powersave_block_gms2_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_BLOCK_GMS2_ENABLED_VALIDATOR = 
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String POWERSAVE_BLOCK_GMS3_ENABLED = "powersave_block_gms3_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_BLOCK_GMS3_ENABLED_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String POWERSAVE_TASK_KILLER_ENABLED = "powersave_task_killer_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_TASK_KILLER_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
 
