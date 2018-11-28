@@ -25206,7 +25206,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
                 boolean kill = false;
                 if( mBaikalService != null ) {
-                    kill = mBaikalService.killByOOM(app, TOP_APP);
+                    kill = mBaikalService.killByOOM(app, TOP_APP, mHomeProcess, mPreviousProcess);
                 }
                 if( kill ) {
                     app.kill("by baikalos service", true);

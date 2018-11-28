@@ -92,12 +92,13 @@ public class BaikalService extends SystemService {
     private static final int MESSAGE_DEVICE_IDLE_CHANGED = 100;
     private static final int MESSAGE_LIGHT_DEVICE_IDLE_CHANGED = 101;
 
-    private final String [] mGoogleServicesBlackListed = {
+    private final String [] mGoogleServicesIdleBlackListed = {
         "com.google.android.location.geocode.GeocodeService",
         "com.google.android.location.geofencer.service.GeofenceProviderService",
         "com.google.android.location.network.NetworkLocationService",
         "com.google.android.location.internal.GoogleLocationManagerService",
         "com.google.android.location.reporting.service.ReportingAndroidService",
+        "com.google.android.location.internal.server.GoogleLocationService",
         "com.google.android.location.fused.FusedLocationService",
         "com.google.android.location.internal.server.HardwareArProviderService",
         "com.google.android.location.places.service.PlaceDetectionAsyncService",
@@ -724,6 +725,12 @@ public class BaikalService extends SystemService {
         }
     }
 
+    public boolean isAggressiveDeviceIdleMode() {
+        synchronized(this) {
+            return isAggressiveDeviceIdleModeLocked();
+        }
+    }
+
     public boolean isLightDeviceIdleMode() {
         synchronized(this) {
             return isLightDeviceIdleModeLocked();
@@ -1017,7 +1024,7 @@ public class BaikalService extends SystemService {
             return true;
         }
 
-        for( String srv:mGoogleServicesBlackListed ) {
+        for( String srv:mGoogleServicesIdleBlackListed ) {
             if( service.name.getClassName().equals(srv) ) {
                 return false;
             } 
@@ -1035,7 +1042,7 @@ public class BaikalService extends SystemService {
 
         if( isAppRestricted(service.appInfo.uid, service.appInfo.packageName) ) return true;
         if( !isGmsUid(service.appInfo.uid) ) return false;
-        for( String srv:mGoogleServicesBlackListed ) {
+        for( String srv:mGoogleServicesIdleBlackListed ) {
             if( service.name.getClassName().equals(srv) ) {
                 //Slog.i(TAG,"GmsService: restricted:" + service.name.getClassName());
                 return true;
@@ -1045,9 +1052,10 @@ public class BaikalService extends SystemService {
     }
 
 
-    public boolean killByOOM(ProcessRecord app, ProcessRecord top_app) {
+    public boolean killByOOM(ProcessRecord app, ProcessRecord top_app, ProcessRecord home_app, ProcessRecord prev_app ) {
         if( app.info.uid < Process.FIRST_APPLICATION_UID  ) return false;
         if( app == top_app ) return false;
+        if( app == home_app ) return false;
         if( isGmsUid(app.info.uid) ) return false;
         if( !mIdleAggressive ) return false;
         if( !mDeviceIdleMode ) return false;
@@ -1083,7 +1091,7 @@ public class BaikalService extends SystemService {
 
     public void noteRestrictionStatistics(boolean allowed, String type, String callerName, int callerUid, int callerPid, 
                             String calledName, int calledUid, int calledPid, String Tag) {
-        final String recordName =  mDeviceIdleMode + "/" + type + "/" + callerName  + "/" + calledName + "/" + Tag;
+        final String recordName =  mDeviceIdleMode + "/" + type + "/" + callerName  + "->" + calledName + "/" + Tag;
 
         RestrictionStatistics stat = mRestrictionStatistics.get(recordName);
         if( stat == null ) {
@@ -1124,6 +1132,10 @@ public class BaikalService extends SystemService {
 
     public boolean isDeviceIdleModeLocked() {
         return mDeviceIdleMode;
+    }
+
+    public boolean isAggressiveDeviceIdleModeLocked() {
+        return mDeviceIdleMode && mIdleAggressive;
     }
 
     public boolean isLightDeviceIdleModeLocked() {
@@ -1269,7 +1281,7 @@ public class BaikalService extends SystemService {
         }
 
         public String getLog() {
-            String log = type + "/" + callerName + "/" + calledName + "/" + Tag; 
+            String log = deviceIdleMode + "/" + type + "/" + callerName + "->" + calledName + "/" + Tag; 
             return log;
         }
     }
