@@ -877,8 +877,8 @@ public final class BroadcastQueue {
 
                 if( mService.mBaikalService != null ) {
                     BroadcastFilter filter = (BroadcastFilter)target;
-                    //mService.mBaikalService.noteRestrictionStatistics(true, "broadcast_filter", r.callerPackage, r.callingUid , r.callingPid, 
-                    //        filter.packageName,filter.owningUid, -1, r.intent.toString());
+                    mService.mBaikalService.noteRestrictionStatistics(true, "broadcast_filter", r.callerPackage, r.callingUid , r.callingPid, 
+                            filter.packageName,filter.owningUid, -1, r.intent.toString());
                 }
 
                 deliverToRegisteredReceiverLocked(r, (BroadcastFilter)target, false, i);
