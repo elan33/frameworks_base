@@ -437,7 +437,7 @@ public final class ActiveServices {
         // start analogously to the legacy-app forced-restrictions case, regardless
         // of its target SDK version.
         boolean forcedStandby = false;
-        if (mAm.mOnBattery && /*bgLaunch && */appRestrictedAnyInBackground(r.appInfo.uid, r.packageName)) {
+        if (mAm.mOnBattery && (bgLaunch || !callerFg) && appRestrictedAnyInBackground(r.appInfo.uid, r.packageName)) {
             //if (DEBUG_FOREGROUND_SERVICE) {
                 Slog.d(TAG, "Forcing bg-only service start only for " + r.shortName
                         + " : bgLaunch=" + bgLaunch + " callerFg=" + callerFg);
@@ -789,9 +789,9 @@ public final class ActiveServices {
                             service.appInfo.targetSdkVersion, -1, false, false, mAm.mDeviceIdleMode);
                             
                     if( mAm.mBaikalService != null ) {
-                        if( mAm.mBaikalService.isServiceWhitelisted(service, uid, service.app.pid, service.packageName, false) ) {
+                        if( mAm.mBaikalService.isServiceWhitelisted(service, uid, service.app!=null?service.app.pid : -1, service.packageName, false) ) {
                             allowed = ActivityManager.APP_START_MODE_NORMAL;
-                        } else if( mAm.mBaikalService.isServiceBlacklisted(service, uid, service.app.pid, service.packageName, false) ) {
+                        } else if( mAm.mBaikalService.isServiceBlacklisted(service, uid, service.app!=null?service.app.pid : -1, service.packageName, false) ) {
                             allowed = ActivityManager.APP_START_MODE_DELAYED;
                         }
                     }
