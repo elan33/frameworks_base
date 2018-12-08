@@ -204,8 +204,8 @@ final class Notifier {
         final int monitorType = getBatteryStatsWakeLockMonitorType(flags);
         if (monitorType >= 0) {
             try {
-                final boolean unimportantForLogging = ownerUid == Process.SYSTEM_UID
-                        && (flags & PowerManager.UNIMPORTANT_FOR_LOGGING) != 0;
+                final boolean unimportantForLogging = false; //ownerUid == Process.SYSTEM_UID
+                        //&& (flags & PowerManager.UNIMPORTANT_FOR_LOGGING) != 0;
                 if (workSource != null) {
                     mBatteryStats.noteStartWakelockFromSource(workSource, ownerPid, tag,
                             historyTag, monitorType, unimportantForLogging);
