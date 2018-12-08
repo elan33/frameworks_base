@@ -1263,10 +1263,12 @@ public final class PowerManagerService extends SystemService
 
     protected void notifyWakeLockAcquiredLocked(WakeLock wakeLock) {
         if (mSystemReady && !wakeLock.mDisabled) {
-            wakeLock.mNotifiedAcquired = true;
-            mNotifier.onWakeLockAcquired(wakeLock.mFlags, wakeLock.mTag, wakeLock.mPackageName,
+            if( !wakeLock.mNotifiedAcquired ) {
+                wakeLock.mNotifiedAcquired = true;
+                mNotifier.onWakeLockAcquired(wakeLock.mFlags, wakeLock.mTag, wakeLock.mPackageName,
                     wakeLock.mOwnerUid, wakeLock.mOwnerPid, wakeLock.mWorkSource,
                     wakeLock.mHistoryTag);
+            }
             restartNofifyLongTimerLocked(wakeLock);
         }
     }
