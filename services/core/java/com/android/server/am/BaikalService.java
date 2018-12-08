@@ -916,12 +916,17 @@ public class BaikalService extends SystemService {
         boolean block = false;
 
         if( a.statsTag.contains("NETWORK_LINGER_COMPLETE") ||
-            a.statsTag.contains("*sync") ||
-            a.statsTag.contains("*job") || 
-            a.statsTag.contains("APPWIDGET_UPDATE") ||
-            a.statsTag.contains("com.android.server.NetworkTimeUpdateService.action.POLL") ||
             a.statsTag.contains("WifiConnectivityManager Restart Scan") ) {
+            a.flags &= ~(AlarmManager.FLAG_WAKE_FROM_IDLE);
+            a.wakeup = false;
+            return true;
+        } 
 
+
+        if( a.statsTag.contains("*sync") ||
+            a.statsTag.contains("*job") || 
+            a.statsTag.contains("com.android.server.NetworkTimeUpdateService.action.POLL") ||
+            a.statsTag.contains("APPWIDGET_UPDATE") ) {
             block = true;
         } 
 
