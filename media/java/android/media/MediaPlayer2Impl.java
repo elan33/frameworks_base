@@ -99,6 +99,7 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
     private SurfaceHolder mSurfaceHolder;
     private EventHandler mEventHandler;
     private PowerManager.WakeLock mWakeLock = null;
+    private boolean mSuspendPlay = false;
     private boolean mScreenOnWhilePlaying;
     private boolean mStayAwake;
     private int mStreamType = AudioManager.USE_DEFAULT_STREAM_TYPE;
@@ -257,8 +258,9 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
         addTask(new Task(CALL_COMPLETED_PAUSE, false) {
             @Override
             void process() {
-                stayAwake(false);
+                stayAwake(true);
                 _pause();
+                stayAwake(false);
             }
         });
     }
@@ -1089,8 +1091,9 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
      */
     @Override
     public void stop() {
-        stayAwake(false);
+        stayAwake(true);
         _stop();
+        stayAwake(false);
     }
 
     private native void _stop() throws IllegalStateException;
@@ -1242,6 +1245,11 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
         if (SystemProperties.getBoolean("audio.offload.ignore_setawake", false) == true) {
             Log.w(TAG, "IGNORING setWakeMode " + mode);
             return;
+        }
+
+        if (SystemProperties.getBoolean("persist.audio.offload.suspend", false) == true) {
+            Log.w(TAG, "Allow system suspend while playing");
+            mSuspendPlay = true;
         }
 
         if (mWakeLock != null) {
@@ -1719,6 +1727,7 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
             mDrmEventCallbackRecords.clear();
         }
 
+        stayAwake(true);
         stayAwake(false);
         _reset();
         // make sure none of the listeners get called anymore
@@ -2704,6 +2713,7 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
     }
 
     private void release() {
+        stayAwake(true);
         stayAwake(false);
         updateSurfaceScreenOn();
         synchronized (mEventCbLock) {
@@ -2751,6 +2761,7 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
     private static final int MEDIA_SUBTITLE_DATA = 201;
     private static final int MEDIA_META_DATA = 202;
     private static final int MEDIA_DRM_INFO = 210;
+    private static final int MEDIA_TIME_DISCONTINUITY = 211;
     private static final int MEDIA_AUDIO_ROUTING_CHANGED = 10000;
 
     private TimeProvider mTimeProvider;
@@ -2872,6 +2883,7 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
 
             case MEDIA_PLAYBACK_COMPLETE:
             {
+                stayAwake(true);
                 final DataSourceDesc dsd = mCurrentDSD;
                 synchronized (mSrcLock) {
                     if (srcId == mCurrentSrcId) {
@@ -2907,11 +2919,13 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
                 if (timeProvider != null) {
                     timeProvider.onPaused(msg.what == MEDIA_PAUSED);
                 }
+                if( mSuspendPlay ) stayAwake(false);
                 break;
             }
 
             case MEDIA_BUFFERING_UPDATE:
             {
+                stayAwake(true);
                 final int percent = msg.arg1;
                 synchronized (mEventCbLock) {
                     if (srcId == mCurrentSrcId) {
@@ -2931,6 +2945,7 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
                         }
                     }
                 }
+                if( mSuspendPlay ) stayAwake(false);
                 return;
             }
 
@@ -3113,6 +3128,12 @@ public final class MediaPlayer2Impl extends MediaPlayer2 {
                         delegate.notifyClient();
                     }
                 }
+                return;
+            }
+
+            case MEDIA_TIME_DISCONTINUITY:
+            {
+                if( mSuspendPlay ) stayAwake(false);
                 return;
             }
 

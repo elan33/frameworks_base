@@ -632,6 +632,7 @@ public class MediaPlayer extends PlayerBase
     private SurfaceHolder mSurfaceHolder;
     private EventHandler mEventHandler;
     private PowerManager.WakeLock mWakeLock = null;
+    private boolean mSuspendPlay = false;
     private boolean mScreenOnWhilePlaying;
     private boolean mStayAwake;
     private int mStreamType = AudioManager.USE_DEFAULT_STREAM_TYPE;
@@ -1361,6 +1362,7 @@ public class MediaPlayer extends PlayerBase
      * initialized.
      */
     public void stop() throws IllegalStateException {
+        stayAwake(true);
         stayAwake(false);
         _stop();
         baseStop();
@@ -1375,6 +1377,7 @@ public class MediaPlayer extends PlayerBase
      * initialized.
      */
     public void pause() throws IllegalStateException {
+        stayAwake(true);
         stayAwake(false);
         _pause();
         basePause();
@@ -1566,6 +1569,11 @@ public class MediaPlayer extends PlayerBase
         if (SystemProperties.getBoolean("audio.offload.ignore_setawake", false) == true) {
             Log.w(TAG, "IGNORING setWakeMode " + mode);
             return;
+        }
+
+        if (SystemProperties.getBoolean("persist.audio.offload.suspend", false) == true) {
+            Log.w(TAG, "Allow system suspend while playing");
+            mSuspendPlay = true;
         }
 
         if (mWakeLock != null) {
@@ -2117,6 +2125,7 @@ public class MediaPlayer extends PlayerBase
      */
     public void release() {
         baseRelease();
+        stayAwake(true);
         stayAwake(false);
         updateSurfaceScreenOn();
         mOnPreparedListener = null;
@@ -2174,6 +2183,7 @@ public class MediaPlayer extends PlayerBase
             mTimeProvider = null;
         }
 
+        stayAwake(true);
         stayAwake(false);
         _reset();
         // make sure none of the listeners get called anymore
@@ -3349,6 +3359,7 @@ public class MediaPlayer extends PlayerBase
                 Log.w(TAG, "mediaplayer went away with unhandled events");
                 return;
             }
+
             switch(msg.what) {
             case MEDIA_PREPARED:
                 try {
@@ -3396,12 +3407,13 @@ public class MediaPlayer extends PlayerBase
 
             case MEDIA_PLAYBACK_COMPLETE:
                 {
+                    stayAwake(true);
                     mOnCompletionInternalListener.onCompletion(mMediaPlayer);
                     OnCompletionListener onCompletionListener = mOnCompletionListener;
                     if (onCompletionListener != null)
                         onCompletionListener.onCompletion(mMediaPlayer);
+                    stayAwake(false);
                 }
-                stayAwake(false);
                 return;
 
             case MEDIA_STOPPED:
@@ -3421,12 +3433,15 @@ public class MediaPlayer extends PlayerBase
                         timeProvider.onPaused(msg.what == MEDIA_PAUSED);
                     }
                 }
+                if( mSuspendPlay ) stayAwake(false);
                 break;
 
             case MEDIA_BUFFERING_UPDATE:
+                stayAwake(true);
                 OnBufferingUpdateListener onBufferingUpdateListener = mOnBufferingUpdateListener;
                 if (onBufferingUpdateListener != null)
                     onBufferingUpdateListener.onBufferingUpdate(mMediaPlayer, msg.arg1);
+                if( mSuspendPlay ) stayAwake(false);
                 return;
 
             case MEDIA_SEEK_COMPLETE:
@@ -3598,6 +3613,7 @@ public class MediaPlayer extends PlayerBase
                     mediaTimeHandler = mOnMediaTimeDiscontinuityHandler;
                 }
                 if (mediaTimeListener == null) {
+                    if( mSuspendPlay ) stayAwake(false);
                     return;
                 }
                 if (msg.obj instanceof Parcel) {
@@ -3625,6 +3641,7 @@ public class MediaPlayer extends PlayerBase
                         });
                     }
                 }
+                if( mSuspendPlay ) stayAwake(false);
                 return;
 
             default:
