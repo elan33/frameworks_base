@@ -2987,7 +2987,9 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setDeviceIdleModeInternal(boolean enabled) {
-        mBaikalService.setDeviceIdleMode(enabled);
+        if( mBaikalService != null ) {
+            mBaikalService.setDeviceIdleMode(enabled);
+        }
         synchronized (mLock) {
             if (mDeviceIdleMode == enabled) {
                 return false;
@@ -3004,7 +3006,9 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setLightDeviceIdleModeInternal(boolean enabled) {
-        mBaikalService.setLightDeviceIdleMode(enabled);
+        if( mBaikalService != null ) {
+            mBaikalService.setLightDeviceIdleMode(enabled);
+        }
         synchronized (mLock) {
             if (mLightDeviceIdleMode != enabled) {
                 mLightDeviceIdleMode = enabled;
@@ -3015,7 +3019,9 @@ public final class PowerManagerService extends SystemService
     }
 
     void setDeviceIdleWhitelistInternal(int[] appids) {
-        mBaikalService.setDeviceIdleWhitelist(appids);
+        if( mBaikalService != null ) {
+            mBaikalService.setDeviceIdleWhitelist(appids);
+        }
         synchronized (mLock) {
             mDeviceIdleWhitelist = appids;
             if (mDeviceIdleMode) {
@@ -3025,7 +3031,9 @@ public final class PowerManagerService extends SystemService
     }
 
     void setDeviceIdleTempWhitelistInternal(int[] appids) {
-        mBaikalService.setDeviceIdleTempWhitelist(appids);
+        if( mBaikalService != null ) {
+            mBaikalService.setDeviceIdleTempWhitelist(appids);
+        }
         synchronized (mLock) {
             mDeviceIdleTempWhitelist = appids;
             if (mDeviceIdleMode) {
@@ -3151,9 +3159,11 @@ public final class PowerManagerService extends SystemService
         if ((wakeLock.mFlags & PowerManager.WAKE_LOCK_LEVEL_MASK)
                 == PowerManager.PARTIAL_WAKE_LOCK) {
 
-            boolean [] retval = mBaikalService.setWakeLockDisabledState(wakeLock);
-            if( retval[0] ) {
-                return retval[1];
+            if( mBaikalService != null ) {
+                boolean [] retval = mBaikalService.setWakeLockDisabledState(wakeLock);
+                if( retval[0] ) {
+                    return retval[1];
+                }
             }
 
             boolean disabled = false;

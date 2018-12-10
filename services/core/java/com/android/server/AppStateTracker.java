@@ -482,10 +482,12 @@ public class AppStateTracker {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     synchronized (mLock) {
-    	                mDeviceIdleMode = mBaikalService.isDeviceIdleMode();
-                        mAggressiveDeviceIdleMode = mBaikalService.isAggressiveDeviceIdleMode();
-                        Slog.v(TAG, "DeviceIdleMode changed :" + mDeviceIdleMode + "/" + mAggressiveDeviceIdleMode);
-                        updateForceAllAppStandbyState();
+                        if( mBaikalService != null ) {
+        	                mDeviceIdleMode = mBaikalService.isDeviceIdleMode();
+                            mAggressiveDeviceIdleMode = mBaikalService.isAggressiveDeviceIdleMode();
+                            Slog.v(TAG, "DeviceIdleMode changed :" + mDeviceIdleMode + "/" + mAggressiveDeviceIdleMode);
+                            updateForceAllAppStandbyState();
+                        }
                     }
     		    }
             }, idleFilter);

@@ -1540,8 +1540,10 @@ public class AlarmManagerService extends SystemService {
         } catch (RemoteException e) {
         }
         removeLocked(operation, directReceiver);
-        mBaikalService.processAlarm(a,mPendingIdleUntil);
-        mBaikalService.adjustAlarm(a);
+        if( mBaikalService != null ) {
+            mBaikalService.processAlarm(a,mPendingIdleUntil);
+            mBaikalService.adjustAlarm(a);
+        }
         setImplLocked(a, false, doValidate);
     }
 
@@ -1613,7 +1615,7 @@ public class AlarmManagerService extends SystemService {
             // The caller has given the time they want this to happen at, however we need
             // to pull that earlier if there are existing alarms that have requested to
             // bring us out of idle at an earlier time.
-            if( !mBaikalService.isAggressiveIdle() ) {
+            if( mBaikalService != null &&  !mBaikalService.isAggressiveIdle() ) {
                 if (mNextWakeFromIdle != null && a.whenElapsed > mNextWakeFromIdle.whenElapsed) {
                     a.when = a.whenElapsed = a.maxWhenElapsed = mNextWakeFromIdle.whenElapsed;
                 }
@@ -3435,7 +3437,7 @@ public class AlarmManagerService extends SystemService {
 
     long currentNonWakeupFuzzLocked(long nowELAPSED) {
 
-        if(mBaikalService.throttleAlarms()) {
+        if( mBaikalService != null && mBaikalService.throttleAlarms()) {
             return 3*60*60*1000;
         }
 
@@ -3455,7 +3457,7 @@ public class AlarmManagerService extends SystemService {
 
     int fuzzForDuration(long duration) {
 
-        if(mBaikalService.throttleAlarms()) {
+        if(mBaikalService != null && mBaikalService.throttleAlarms()) {
             return -1;
         }
 
