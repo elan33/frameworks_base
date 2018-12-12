@@ -222,7 +222,7 @@ public final class PowerManagerService extends SystemService
     private static final int SCREEN_ON_LATENCY_WARNING_MS = 200;
 
     // Default value for buttons lights timeout
-    private static final int BUTTON_ON_DURATION = 5000;
+    private static final int DEFAULT_BUTTON_TIMEOUT = 5000;
 
     /** Constants for {@link #shutdownOrRebootInternal} */
     @Retention(RetentionPolicy.SOURCE)
@@ -493,6 +493,9 @@ public final class PowerManagerService extends SystemService
 
     // Buttons brightness setting, from 0 t 255.
     private int mButtonBrightnessSetting;
+
+    // Button on duration
+    private int mButtonTimeout;
 
     // The screen brightness setting override from the window manager
     // to allow the current foreground activity to override the brightness.
@@ -901,6 +904,9 @@ public final class PowerManagerService extends SystemService
         resolver.registerContentObserver(Settings.System.getUriFor(
                 Settings.System.BUTTON_BRIGHTNESS_ENABLED),
                 false, mSettingsObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(Settings.System.getUriFor(
+                Settings.System.BUTTON_TIMEOUT),
+                false, mSettingsObserver, UserHandle.USER_ALL);
         IVrManager vrManager = (IVrManager) getBinderService(Context.VR_SERVICE);
         if (vrManager != null) {
             try {
@@ -1044,6 +1050,9 @@ public final class PowerManagerService extends SystemService
         if (buttonBrightnessEnabled != mButtonBrightnessEnabled) {
             mButtonBrightnessEnabled = buttonBrightnessEnabled;
         }
+
+        mButtonTimeout = Settings.System.getIntForUser(resolver,
+                Settings.System.BUTTON_TIMEOUT, DEFAULT_BUTTON_TIMEOUT, UserHandle.USER_CURRENT);
 
         final boolean defaultToNavigationBar = resources
                 .getBoolean(com.android.internal.R.bool.config_defaultToNavigationBar);
@@ -1698,7 +1707,7 @@ public final class PowerManagerService extends SystemService
             final int oldBrightness = mButtonsLight.getBrightness();
             final boolean wasOn = mButtonsLight.getBrightness() > 0;
             final boolean awake = mWakefulness == WAKEFULNESS_AWAKE;
-            final boolean turnOffByTimeout = now >= mLastUserActivityTime + BUTTON_ON_DURATION;
+            final boolean turnOffByTimeout = (now >= mLastUserActivityTime + mButtonTimeout) && (mButtonTimeout != 0);
             final boolean screenBright = (mUserActivitySummary & USER_ACTIVITY_SCREEN_BRIGHT) != 0;
             if (awake && wasOn) {
                 if (turnOffByTimeout || !screenBright || !mButtonBrightnessEnabled) {
@@ -2110,8 +2119,8 @@ public final class PowerManagerService extends SystemService
                     nextTimeout = mLastUserActivityTime
                             + screenOffTimeout - screenDimDuration;
                     if (now < nextTimeout) {
-                        if (now < mLastUserActivityTime + BUTTON_ON_DURATION) {
-                            nextTimeout = now + BUTTON_ON_DURATION;
+                        if (now < mLastUserActivityTime + mButtonTimeout) {
+                            nextTimeout = now + mButtonTimeout;
                         }
                         mUserActivitySummary = USER_ACTIVITY_SCREEN_BRIGHT;
                     } else {

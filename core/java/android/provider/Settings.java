@@ -4463,6 +4463,20 @@ public final class Settings {
         /** @hide */
         private static final Validator BUTTON_BRIGHTNESS_ENABLED_VALIDATOR = BOOLEAN_VALIDATOR;
 
+        /**
+         * Value for button brightness in ms.
+         * This is an integer value in a range between 0 and 6000.
+         *      0 = off
+         *    5000 = default
+         *    60000 = max
+         * @hide
+         */
+        public static final String BUTTON_TIMEOUT = "button_timeout";
+
+        /** @hide */
+        public static final Validator BUTTON_TIMEOUT_VALIDATOR =
+            new SettingsValidators.InclusiveIntegerRangeValidator(0, 60000);
+
         /** Action to perform when the home key is long-pressed.
          * (Default can be configured via config_longPressOnHardwareHomeBehavior)
          * 0 - Nothing
@@ -4954,6 +4968,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(NAVIGATION_BAR_ENABLED);
             PRIVATE_SETTINGS.add(BUTTON_BRIGHTNESS);
             PRIVATE_SETTINGS.add(BUTTON_BRIGHTNESS_ENABLED);
+            PRIVATE_SETTINGS.add(BUTTON_TIMEOUT);
             PRIVATE_SETTINGS.add(KEY_HOME_LONG_PRESS_ACTION);
             PRIVATE_SETTINGS.add(KEY_HOME_DOUBLE_TAP_ACTION);
             PRIVATE_SETTINGS.add(KEY_MENU_LONG_PRESS_ACTION);
@@ -5103,6 +5118,7 @@ public final class Settings {
             VALIDATORS.put(NAVIGATION_BAR_ENABLED, NAVIGATION_BAR_ENABLED_VALIDATOR);
             VALIDATORS.put(BUTTON_BRIGHTNESS, BUTTON_BRIGHTNESS_VALIDATOR);
             VALIDATORS.put(BUTTON_BRIGHTNESS_ENABLED, BUTTON_BRIGHTNESS_ENABLED_VALIDATOR);
+            VALIDATORS.put(BUTTON_TIMEOUT, BUTTON_TIMEOUT_VALIDATOR);
             VALIDATORS.put(OMNI_SHOW_BATTERY_IMAGE, OMNI_SHOW_BATTERY_IMAGE_VALIDATOR);
             // BAIKALOS Settings end
         }
