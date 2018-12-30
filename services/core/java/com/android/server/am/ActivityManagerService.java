@@ -13182,9 +13182,14 @@ public class ActivityManagerService extends IActivityManager.Stub
     }
 
     boolean isBackgroundRestrictedNoCheck(final int uid, final String packageName) {
-        final int mode = mAppOpsService.checkOperation(AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
-                uid, packageName);
-        return mode != AppOpsManager.MODE_ALLOWED;
+
+        //if( mBaikalService == null ) {
+        //    final int mode = mAppOpsService.checkOperation(AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
+        //        uid, packageName);
+        //    return mode != AppOpsManager.MODE_ALLOWED;
+        //}
+        //return mBaikalService.isAppRestricted(uid, packageName);
+        return false;
     }
 
     @Override
