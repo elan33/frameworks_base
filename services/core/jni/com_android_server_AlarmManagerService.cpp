@@ -125,6 +125,7 @@ int AlarmImpl::setTime(struct timeval *tv)
     int fd;
     int res;
 
+    ALOGV("settimeofday\n");
     res = settimeofday(tv, NULL);
     if (res < 0) {
         ALOGV("settimeofday() failed: %s\n", strerror(errno));
@@ -203,6 +204,8 @@ static jint android_server_AlarmManagerService_setKernelTime(JNIEnv*, jobject, j
     struct timeval tv;
     int ret;
 
+    ALOGV("setKernelTime\n");
+
     if (millis <= 0 || millis / 1000LL >= INT_MAX) {
         return -1;
     }
@@ -224,6 +227,8 @@ static jint android_server_AlarmManagerService_setKernelTime(JNIEnv*, jobject, j
 static jint android_server_AlarmManagerService_setKernelTimezone(JNIEnv*, jobject, jlong, jint minswest)
 {
     struct timezone tz;
+
+    ALOGV("setKernelTimezone\n");
 
     tz.tz_minuteswest = minswest;
     tz.tz_dsttime = 0;
@@ -368,13 +373,14 @@ static jlong android_server_AlarmManagerService_init(JNIEnv*, jobject)
     /* 0 = disarmed; the timerfd doesn't need to be armed to get
        RTC change notifications, just set up as cancelable */
 
+    /*
     int err = timerfd_settime(fds[ANDROID_ALARM_TYPE_COUNT],
             TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET, &spec, NULL);
     if (err < 0) {
         ALOGE("timerfd_settime() failed: %s", strerror(errno));
         delete ret;
         return 0;
-    }
+    }*/
 
     return reinterpret_cast<jlong>(ret);
 }
