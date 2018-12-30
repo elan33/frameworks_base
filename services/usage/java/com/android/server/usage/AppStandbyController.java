@@ -1024,20 +1024,20 @@ public class AppStandbyController {
             }
 
             if (isActiveDeviceAdmin(packageName, userId)) {
-                return true;
+                //return true;
             }
 
             if (isActiveNetworkScorer(packageName)) {
-                return true;
+                //return true;
             }
 
             if (mAppWidgetManager != null
                     && mInjector.isBoundWidgetPackage(mAppWidgetManager, packageName, userId)) {
-                return true;
+                //return true;
             }
 
             if (isDeviceProvisioningPackage(packageName)) {
-                return true;
+                //return true;
             }
         }
 
