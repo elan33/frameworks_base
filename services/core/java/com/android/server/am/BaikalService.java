@@ -36,6 +36,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.SystemProperties;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
@@ -61,6 +62,12 @@ import com.android.server.DeviceIdleController;
 import com.android.server.AlarmManagerService;
 import com.android.server.AppOpsService;
 import com.android.server.SystemService;
+
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.hardware.SystemSensorManager;
 
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -89,8 +96,12 @@ public class BaikalService extends SystemService {
 
     private static final boolean DEBUG = true;
 
+    private static final int SENSOR_HALL_TYPE=33171016;
+
     private static final int MESSAGE_DEVICE_IDLE_CHANGED = 100;
     private static final int MESSAGE_LIGHT_DEVICE_IDLE_CHANGED = 101;
+
+    private static final int MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT = 200;
 
     private final String [] mGoogleServicesIdleBlackListed = {
         "com.google.android.location.geocode.GeocodeService",
@@ -124,8 +135,13 @@ public class BaikalService extends SystemService {
 
     private boolean mIdleAggressive;
     private boolean mLimitServices = true;
-    private boolean mLimitBroadCasts = true;
+    private boolean mLimitBroadcasts = true;
+    private boolean mApplyRestrictionsScreenOn = false;
 
+    private boolean mProximityServiceWakeupEnabled = false;
+    private boolean mProximityServiceSleepEnabled = false;
+    private boolean mHallSensorServiceEnabled = false;
+    
     private boolean mThrottleAlarms;
     private boolean mQtiBiometricsInitialized;
 
@@ -136,16 +152,26 @@ public class BaikalService extends SystemService {
     private final Context mContext;
     private Constants mConstants;
     final MyHandler mHandler;
+    final MyHandlerThread mHandlerThread;
+
 
     private CameraManager mCameraManager;
     private String mRearFlashCameraId;
 
 
-    AppOpsService mAppOpsService;
+    // The sensor manager.
+    private SensorManager mSensorManager;
 
+    private ProximityService mProximityService;
+    private HallSensorService mHallSensorService;
+    PowerManager.WakeLock mProximityWakeLock;
+
+
+    AppOpsService mAppOpsService;
 
     AlarmManagerService mAlarmManagerService;
     DeviceIdleController mDeviceIdleController;
+    PowerManager mPowerManager;
     PowerManagerService mPowerManagerService;
     ActivityManagerService mActivityManagerService;
 
@@ -166,7 +192,9 @@ public class BaikalService extends SystemService {
             Slog.i(TAG,"BaikalService()");
         }
 
-        mHandler = new MyHandler(BackgroundThread.getHandler().getLooper());
+        mHandlerThread = new MyHandlerThread();
+        mHandlerThread.start();
+        mHandler = new MyHandler(mHandlerThread.getLooper());
     }
 
     @Override
@@ -185,29 +213,46 @@ public class BaikalService extends SystemService {
 
         if (phase == PHASE_BOOT_COMPLETED) {
 
-            mConstants = new Constants(mHandler, getContext().getContentResolver());
+            synchronized(this) {
+                mConstants = new Constants(mHandler, getContext().getContentResolver());
 
-            // get notified of phone state changes
-            TelephonyManager telephonyManager =
-                    (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
-            telephonyManager.listen(mPhoneStateListener, 0xFFFFFFF);
+                // get notified of phone state changes
+                TelephonyManager telephonyManager =
+                        (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+                telephonyManager.listen(mPhoneStateListener, 0xFFFFFFF);
 
-            mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
-            mCameraManager.registerTorchCallback(new TorchModeCallback(), mHandler);
+                mCameraManager = (CameraManager) mContext.getSystemService(Context.CAMERA_SERVICE);
+                mCameraManager.registerTorchCallback(new TorchModeCallback(), mHandler);
+
+                mSensorManager = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
+                Slog.i(TAG,"SensorManager initialized");
+    
+                mPowerManager = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+                mProximityWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "*baikal_proximity*");
 
 
-            final PackageManager pm = getContext().getPackageManager();
+                mProximityService = new ProximityService();
+                mProximityService.Initialize();
 
-            try {
-                ApplicationInfo ai = pm.getApplicationInfo("com.google.android.gms",
-                       PackageManager.MATCH_ALL);
-                if( ai != null ) {
-                    setGmsUid(ai.uid);
-                    Slog.i(TAG,"onBootPhase(" + phase + "): Google Play Services uid=" + ai.uid);
+                mHallSensorService = new HallSensorService();
+                mHallSensorService.Initialize();
+
+                final PackageManager pm = getContext().getPackageManager();
+
+                try {
+                    ApplicationInfo ai = pm.getApplicationInfo("com.google.android.gms",
+                               PackageManager.MATCH_ALL);
+                    if( ai != null ) {
+                        setGmsUid(ai.uid);
+                        Slog.i(TAG,"onBootPhase(" + phase + "): Google Play Services uid=" + ai.uid);
+                    }
+                } catch(Exception e) {
+                    Slog.i(TAG,"onBootPhase(" + phase + "): Google Play Services not found on this device.");
                 }
-            } catch(Exception e) {
-                Slog.i(TAG,"onBootPhase(" + phase + "): Google Play Services not found on this device.");
+
+                mConstants.updateConstantsLocked();
             }
+
         }
     }
 
@@ -263,6 +308,11 @@ public class BaikalService extends SystemService {
                 case MESSAGE_LIGHT_DEVICE_IDLE_CHANGED:
                 onLightDeviceIdleModeChanged();
                 break;
+                case MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT:
+                if( mProximityService != null ) {
+                    mProximityService.handleProximityTimeout();
+                }
+                break;
             }
         }
     }
@@ -299,12 +349,24 @@ public class BaikalService extends SystemService {
             resolver.registerContentObserver(Settings.Global.getUriFor(
                     Settings.Global.POWERSAVE_WL_BLOCK_ENABLED), false, this);
 
+            resolver.registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.POWERSAVE_RESTRICT_SCREEN_ON),
+                    false, this);
+
+            resolver.registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.BAIKAL_WAKEUP_PROXIMITY),
+                    false, this);
+
+            resolver.registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.BAIKAL_SLEEP_PROXIMITY),
+                    false, this);
+
+            resolver.registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.BAIKAL_HALL_SENSOR),
+                    false, this);
+
             } catch( Exception e ) {
             }
-
-            //mResolver.registerContentObserver(
-            //        Settings.Global.getUriFor(Settings.Global.DEVICE_IDLE_AGGRESSIVE),
-            //        false, this);
 
             updateConstants();
         }
@@ -340,13 +402,31 @@ public class BaikalService extends SystemService {
                 mIdleAggressive = Settings.Global.getInt(mResolver,
                         Settings.Global.DEVICE_IDLE_AGGRESSIVE_ENABLED) == 1;
 
-                mThrottleAlarms = Settings.Global.getInt(
-                        mResolver, Settings.Global.POWERSAVE_THROTTLE_ALARMS_ENABLED, 
-                        0) == 1;
+                mThrottleAlarms = Settings.Global.getInt(mResolver, 
+                        Settings.Global.POWERSAVE_THROTTLE_ALARMS_ENABLED) == 1;
+
+                mWlBlockEnabled = Settings.Global.getInt(mResolver, 
+                        Settings.Global.POWERSAVE_WL_BLOCK_ENABLED) == 1;
+
+                mApplyRestrictionsScreenOn = Settings.Global.getInt(mResolver, 
+                        Settings.Global.POWERSAVE_RESTRICT_SCREEN_ON) == 1;
+
+                mProximityServiceWakeupEnabled = Settings.Global.getInt(mResolver, 
+                        Settings.Global.BAIKAL_WAKEUP_PROXIMITY) == 1;
+
+                mProximityServiceSleepEnabled = Settings.Global.getInt(mResolver, 
+                        Settings.Global.BAIKAL_SLEEP_PROXIMITY) == 1;
+
+                mHallSensorServiceEnabled = Settings.Global.getInt(mResolver, 
+                        Settings.Global.BAIKAL_HALL_SENSOR) == 1;
 
 
-                mWlBlockEnabled = Settings.System.getInt(
-                        mResolver, Settings.Global.POWERSAVE_WL_BLOCK_ENABLED, 0) == 1;
+                if( mProximityService != null ) {
+                    mProximityService.setProximitySensorEnabled(mProximityServiceWakeupEnabled | mProximityServiceSleepEnabled | mHallSensorServiceEnabled);
+                }
+                if( mHallSensorService != null ) {
+                    mHallSensorService.setHallSensorEnabled(mHallSensorServiceEnabled);
+                }
 
                     //mParser.setString(Settings.Global.getString(mResolver,
                     //        Settings.Global.DEVICE_IDLE_CONSTANTS));
@@ -358,10 +438,14 @@ public class BaikalService extends SystemService {
             }
 
             Slog.d(TAG, "updateConstantsLocked: mTorchLongPressPowerEnabled=" + mTorchLongPressPowerEnabled +
-                        "mTorchIncomingCall=" + mTorchIncomingCall +
-                        "mTorchNotification=" + mTorchNotification +
-                        "mIdleAggressive=" + mIdleAggressive +
-                        "mThrottleAlarms=" + mThrottleAlarms);
+                        ", mTorchIncomingCall=" + mTorchIncomingCall +
+                        ", mTorchNotification=" + mTorchNotification +
+                        ", mIdleAggressive=" + mIdleAggressive +
+                        ", mApplyRestrictionsScreenOn=" + mApplyRestrictionsScreenOn +
+                        ", mProximityServiceWakeupEnabled=" + mProximityServiceWakeupEnabled +
+                        ", mProximityServiceSleepEnabled=" + mProximityServiceSleepEnabled +
+                        ", mHallSensorServiceEnabled=" + mHallSensorServiceEnabled +
+                        ", mThrottleAlarms=" + mThrottleAlarms);
 
         }
 
@@ -1004,56 +1088,80 @@ public class BaikalService extends SystemService {
 
     public boolean isBroadcastWhitelisted(BroadcastRecord r, ResolveInfo info) {
         //Slog.i(TAG,"isBroadcastWhitelisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+        String act = r.intent.getAction();
+        if( act == null ) return false;
+        if( act.contains("com.google.android.c2dm") ) return true;
+        if( act.startsWith("android.bluetooth") ) return true;
+
+        if( act.equals("android.os.action.DEVICE_IDLE_MODE_CHANGED") ) return true;
+    	if( act.equals("android.os.action.LIGHT_DEVICE_IDLE_MODE_CHANGED") ) return true;
+    	if( act.equals("android.intent.action.SCREEN_OFF") ) return true;
+    	if( act.equals("android.intent.action.SCREEN_ON") ) return true;
+    	if( act.equals("android.intent.action.ACTION_POWER_CONNECTED") ) return true;
+    	if( act.equals("android.intent.action.ACTION_POWER_DISCONNECTED") ) return true;
+
+        if( act.startsWith("com.google.android.gms.auth") ) return true;
+        if( act.contains("com.google.android.gcm.intent") ) return true;
+
+        //if( !mDeviceIdleMode ) {
+            if( act.startsWith("android.intent.action.DOWNLOAD") ) return true;
+            if( act.startsWith("android.intent.action.PACKAGE") ) return true;
+            if( act.startsWith("android.intent.action.INTENT_FILTER") ) return true;
+            if( act.startsWith("com.android.vending.INTENT_PACKAGE") ) return true;
+        //}
+
         return false;
     }
 
     public boolean isBroadcastBlacklisted(BroadcastRecord r, ResolveInfo info) {
-        //Slog.i(TAG,"isBroadcastBlacklisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
-        if( !mDeviceIdleMode ) {
-            return false; 
-        }
-        if( info == null || info.activityInfo == null ) {
-             Slog.i(TAG,"isBroadcastBlacklisted: ResolveInfo info NULL for " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
-             return false;
-        }
-        if( isAppRestricted(info.activityInfo.applicationInfo.uid, info.activityInfo.applicationInfo.packageName) ) return true;
+            //Slog.i(TAG,"isBroadcastBlacklisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+            if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn ) {
+                return false; 
+            }
+            if( info == null || info.activityInfo == null ) {
+                 Slog.i(TAG,"isBroadcastBlacklisted: ResolveInfo info NULL for " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+                 return false;
+            }
+            if( isAppRestricted(info.activityInfo.applicationInfo.uid, info.activityInfo.applicationInfo.packageName) ) return true;
 
-        return false;
+            return false;
     }
 
     public boolean isServiceWhitelisted(ServiceRecord service, int callingUid, int callingPid, String callingPackageName, boolean isStarting) {
-        //Slog.i(TAG,"isServiceWhitelisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
-        if( !isGmsUid(service.appInfo.uid) ) return false;
-        if( !mDeviceIdleMode ) {
-            //Slog.i(TAG,"GmsService: unrestricted (not idle):" + service.name.getClassName());
-            return true;
-        }
+            //Slog.i(TAG,"isServiceWhitelisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
+            if( !isGmsUid(service.appInfo.uid) ) return false;
+            if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn) {
+                //Slog.i(TAG,"GmsService: unrestricted (not idle):" + service.name.getClassName());
+                return true;
+            }
 
-        for( String srv:mGoogleServicesIdleBlackListed ) {
-            if( service.name.getClassName().equals(srv) ) {
-                return false;
-            } 
-        }
-        //Slog.i(TAG,"GmsService: unrestricted (wl):" + service.name.getClassName());
-        return true;
+            for( String srv:mGoogleServicesIdleBlackListed ) {
+                if( service.name.getClassName().equals(srv) ) {
+                    return false;
+                } 
+            }
+            //Slog.i(TAG,"GmsService: unrestricted (wl):" + service.name.getClassName());
+            return true;
     }
     
     public boolean isServiceBlacklisted(ServiceRecord service, int callingUid, int callingPid, String callingPackageName, boolean isStarting) {
-        //Slog.i(TAG,"isServiceBlacklisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
-        if( !mDeviceIdleMode ) {
-            //Slog.i(TAG,"GmsService: unblocked (not idle):" + service.name.getClassName());
-            return false; 
-        }
+            //Slog.i(TAG,"isServiceBlacklisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
+            if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn) {
+                //Slog.i(TAG,"GmsService: unblocked (not idle):" + service.name.getClassName());
+                return false; 
+            }
 
-        if( isAppRestricted(service.appInfo.uid, service.appInfo.packageName) ) return true;
-        if( !isGmsUid(service.appInfo.uid) ) return false;
-        for( String srv:mGoogleServicesIdleBlackListed ) {
-            if( service.name.getClassName().equals(srv) ) {
-                //Slog.i(TAG,"GmsService: restricted:" + service.name.getClassName());
-                return true;
-            } 
-        }
-        return false;
+            if( isAppRestricted(service.appInfo.uid, service.appInfo.packageName) ) return true;
+            if( !isGmsUid(service.appInfo.uid) ) return false;
+            if( mDeviceIdleMode ) {
+                for( String srv:mGoogleServicesIdleBlackListed ) {
+                    if( service.name.getClassName().equals(srv) ) {
+                        //Slog.i(TAG,"GmsService: restricted:" + service.name.getClassName());
+                        return true;
+                    } 
+                }
+            }
+            return false;
     }
 
 
@@ -1127,7 +1235,11 @@ public class BaikalService extends SystemService {
         }
     }
 
-    private boolean isAppRestricted(int uid, String packageName) {
+    public boolean isAppRestricted(int uid, String packageName) {
+        synchronized(this) {
+            if( Arrays.binarySearch(mDeviceIdleWhitelist, uid) >= 0) return false;
+            if( Arrays.binarySearch(mDeviceIdleTempWhitelist, uid) >= 0) return false;
+        }
         if( mAppOpsService == null ) return false;
         final int mode = mAppOpsService.checkOperation(AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
                 uid, packageName);
@@ -1180,6 +1292,21 @@ public class BaikalService extends SystemService {
     public void setLastWakeupReasonLocked(String reason) {
         mLastWakeupReason = reason;
     }
+
+    void goToSleep() {
+        if( mPowerManager != null ) {
+            mPowerManager.goToSleep(SystemClock.uptimeMillis(), PowerManager.GO_TO_SLEEP_REASON_POWER_BUTTON, 0);
+        }
+    }
+
+    void wakeUp() {
+        if( mPowerManager != null ) {
+            mPowerManager.wakeUp(SystemClock.uptimeMillis(), "android.policy:LID");
+        }
+    }
+
+  
+
 
     private void toggleTorch(boolean on) {
         //cancelTorchOff();
@@ -1288,6 +1415,204 @@ public class BaikalService extends SystemService {
         public String getLog() {
             String log = deviceIdleMode + "/" + type + "/" + callerName + "->" + calledName + "/" + Tag; 
             return log;
+        }
+    }
+
+    final class ProximityService {
+        // The proximity sensor, or null if not available or needed.
+        private Sensor mProximitySensor;
+        private float  mProximityThreshold;
+        private boolean mProximitySensorEnabled;
+
+        private long proximityPositiveTime;
+        private long proximityNegativeTime;
+        private long proximityClickStart;
+        private long proximityClickCount;
+
+
+        private final SensorEventListener mProximitySensorListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                if (mProximitySensorEnabled) {
+                    final long time = SystemClock.uptimeMillis();
+                    final float distance = event.values[0];
+                    boolean positive = distance >= 0.0f && distance < mProximityThreshold;
+                    handleProximitySensorEvent(time, positive);
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                // Not used.
+            }
+        };
+
+
+        void Initialize() {
+            mProximitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY,true);
+            if( mProximitySensor != null ) { 
+                mProximityThreshold = mProximitySensor.getMaximumRange();
+            }
+            Slog.i(TAG,"Proximity Initialize: sensor=" + mProximitySensor);
+        }
+
+        void setProximitySensorEnabled(boolean enable) {
+            Slog.i(TAG,"setProximitySensorEnabled: enable=" + enable);
+            if( mProximitySensor == null ) return; 
+            if (enable) {
+                if (!mProximitySensorEnabled) {
+                    mProximitySensorEnabled = true;
+                    mSensorManager.registerListener(mProximitySensorListener, mProximitySensor,
+                        SensorManager.SENSOR_DELAY_FASTEST, 1000000);
+                }
+            } else {
+                if (mProximitySensorEnabled) {
+                    mProximitySensorEnabled = false;
+                    mSensorManager.unregisterListener(mProximitySensorListener);
+                }
+            }
+        }
+
+        private void handleProximitySensorEvent(long time, boolean positive) {
+            if (mProximitySensorEnabled) {
+
+                boolean isInteractive = mPowerManager.isInteractive();
+                if( !mProximityServiceWakeupEnabled && !isInteractive ) return;
+                if( !mProximityServiceSleepEnabled && isInteractive ) return;
+
+                //final long now = SystemClock.elapsedRealtime();
+                Slog.i(TAG,"handleProximitySensorEvent: value=" + positive + ", time=" + time);
+                AcquireWakelock();
+                if( positive == false ) {
+                    proximityNegativeTime = time;
+                    if( (time - proximityClickStart) < 2500 ) {
+                        proximityClickCount++;
+                        Slog.i(TAG,"handleProximitySensorEvent: open <2000 :" + (time-proximityClickStart) + ":" + proximityClickCount);
+                        if( proximityClickCount == 2 ) {
+                            handleWakeup(isInteractive);
+                        }
+                    } else {
+                        Slog.i(TAG,"handleProximitySensorEvent: open >2000 :" + (time-proximityClickStart) + ":0");
+                        proximityClickCount = 0;
+                    }
+                } else {
+                    proximityPositiveTime = time;
+                    if( (time - proximityClickStart) > 2500 ) {
+                        proximityClickStart = time;
+                        proximityClickCount = 0;
+                        Slog.i(TAG,"handleProximitySensorEvent: closed > 2000 :" + (time-proximityClickStart) + ":0");
+                    } else {
+                        Slog.i(TAG,"handleProximitySensorEvent: closed < 2000 :" + (time-proximityClickStart) + ":" + proximityClickCount);
+                    }
+                }
+            }
+        }
+
+        void handleWakeup(boolean interactive) {
+            Slog.i(TAG,"handleProximitySensorWakeup()");
+            if( mPowerManager != null && interactive ) {
+                goToSleep();
+            } else {
+                wakeUp();
+            }
+        }
+        
+        void handleProximityTimeout() {
+            ReleaseWakelock();
+        }
+
+        void setProximityTimeout() {
+            Message msg = mHandler.obtainMessage(MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT);
+            mHandler.removeMessages(MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT);
+            mHandler.sendMessageDelayed(msg,3000);
+        }
+
+        private void ReleaseWakelock() {
+            if (mProximityWakeLock.isHeld()) {
+                Slog.i(TAG,"ProximitySensor: ReleaseWakelock()");
+                mProximityWakeLock.release();
+            }
+        }
+
+        private void AcquireWakelock() {
+            setProximityTimeout();
+            if (!mProximityWakeLock.isHeld()) {
+                Slog.i(TAG,"ProximitySensor: AcquireWakelock()");
+                mProximityWakeLock.acquire();
+            }
+        }
+
+    }
+
+    final class HallSensorService {
+        // The hall sensor, or null if not available or needed.
+        private Sensor mHallSensor;
+        private boolean mHallSensorEnabled;
+
+        private final SensorEventListener mHallSensorListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                if (mHallSensorEnabled) {
+                    final long time = SystemClock.uptimeMillis();
+                    final float distance = event.values[0];
+                    boolean positive = distance > 0.0f;
+                    handleHallSensorEvent(time, positive);
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                // Not used.
+            }
+        };
+
+
+        void Initialize() {
+            mHallSensor = mSensorManager.getDefaultSensor(SENSOR_HALL_TYPE, true);
+            Slog.i(TAG,"Hall Initialize: sensor=" + mHallSensor);
+        }
+
+        void setHallSensorEnabled(boolean enable) {
+            Slog.i(TAG,"setHallSensorEnabled: enable=" + enable);
+            if( mHallSensor == null ) return; 
+            if (enable) {
+                if (!mHallSensorEnabled) {
+                    mHallSensorEnabled = true;
+                    mSensorManager.registerListener(mHallSensorListener, mHallSensor,
+                        SensorManager.SENSOR_DELAY_FASTEST, 1000000);
+                }
+            } else {
+                if (mHallSensorEnabled) {
+                    mHallSensorEnabled = false;
+                    mSensorManager.unregisterListener(mHallSensorListener);
+                }
+            }
+        }
+
+        private void handleHallSensorEvent(long time, boolean positive) {
+            if (mHallSensorEnabled) {
+                Slog.i(TAG,"handleHallSensorEvent: value=" + positive + ", time=" + time);
+                handleWakeup(!positive);
+            }
+        }
+
+        void handleWakeup(boolean wakeup) {
+            Slog.i(TAG,"handleHallSensorWakeup()");
+            if( wakeup ) {
+                wakeUp();
+            } else {
+                goToSleep();
+            }
+        }
+    }
+
+
+    private class MyHandlerThread extends HandlerThread {
+
+        Handler handler;
+
+        public MyHandlerThread() {
+            super("baikal.handler", android.os.Process.THREAD_PRIORITY_FOREGROUND);
         }
     }
 }

@@ -4486,6 +4486,15 @@ public final class Settings {
         public static final Validator BUTTON_TIMEOUT_VALIDATOR =
             new SettingsValidators.InclusiveIntegerRangeValidator(0, 60000);
 
+        /**
+         * @hide
+         */
+        public static final String BUTTON_BACKLIGHT_ON_TOUCH_ONLY = "button_backlight_on_touch_only";
+        /** @hide */
+        private static final Validator BUTTON_BACKLIGHT_ON_TOUCH_ONLY_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+
         /** Action to perform when the home key is long-pressed.
          * (Default can be configured via config_longPressOnHardwareHomeBehavior)
          * 0 - Nothing
@@ -4734,6 +4743,17 @@ public final class Settings {
          * @hide
          */
         public static final String SHOW_VOLTE_ICON = "volte_icon";
+
+         /**
+          * Volume key controls ringtone or media sound stream
+          * @hide
+          */
+         public static final String VOLUME_KEYS_CONTROL_RING_TONE =
+                 "volume_keys_control_ring_tone";
+ 
+         /** @hide */
+         private static final Validator VOLUME_KEYS_CONTROL_RING_TONE_VALIDATOR =
+                BOOLEAN_VALIDATOR;
 
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
@@ -11449,6 +11469,34 @@ public final class Settings {
         private static final Validator POWERSAVE_TASK_KILLER_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
+        /** @hide */
+        public static final String POWERSAVE_RESTRICT_SCREEN_ON = "powersave_restrict_screen_on_enabled";
+
+        /** @hide */
+        private static final Validator POWERSAVE_RESTRICT_SCREEN_ON_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String BAIKAL_WAKEUP_PROXIMITY = "baikal_wakeup_proximity_enabled";
+
+        /** @hide */
+        private static final Validator BAIKAL_WAKEUP_PROXIMITY_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+
+        /** @hide */
+        public static final String BAIKAL_SLEEP_PROXIMITY = "baikal_sleep_proximity_enabled";
+
+        /** @hide */
+        private static final Validator BAIKAL_SLEEP_PROXIMITY_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String BAIKAL_HALL_SENSOR = "baikal_hall_sensor_enabled";
+
+        /** @hide */
+        private static final Validator BAIKAL_HALL_SENSOR_VALIDATOR =
+                BOOLEAN_VALIDATOR;
 
         /**
          * Battery Saver specific settings
