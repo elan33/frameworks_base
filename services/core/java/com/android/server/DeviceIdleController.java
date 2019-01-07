@@ -1629,8 +1629,8 @@ public class DeviceIdleController extends SystemService
                 ApplicationInfo ai = getContext().getPackageManager().getApplicationInfo(name,
                         PackageManager.MATCH_ANY_USER);
 
-                if( !ai.packageName.startsWith("com.google.android.gms") &&
-                    !ai.packageName.startsWith("com.android.vending") ) {
+                if( ai.packageName.startsWith("com.google.android.gms") ||
+                    ai.packageName.startsWith("com.android.vending") ) {
                     if (DEBUG) {
                         Slog.d(TAG, "addPowerSaveWhitelistAppInternal: name=" + name, new Throwable());
                     }
