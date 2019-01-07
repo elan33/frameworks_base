@@ -1206,31 +1206,36 @@ public class BaikalService extends SystemService {
                             String calledName, int calledUid, int calledPid, String Tag) {
         final String recordName =  mDeviceIdleMode + "/" + type + "/" + callerName  + "->" + calledName + "/" + Tag;
 
-        RestrictionStatistics stat = mRestrictionStatistics.get(recordName);
-        if( stat == null ) {
-            stat = new RestrictionStatistics(type, callerName, callerUid, callerPid,
-                                        calledName, calledUid, calledPid, Tag);
-            mRestrictionStatistics.put(recordName, stat);
+        synchronized(this) {
+
+            RestrictionStatistics stat = mRestrictionStatistics.get(recordName);
+            if( stat == null ) {
+                stat = new RestrictionStatistics(type, callerName, callerUid, callerPid,
+                                            calledName, calledUid, calledPid, Tag);
+                mRestrictionStatistics.put(recordName, stat);
+            }
+            if( allowed ) stat.allowed++;
+            else stat.blocked++;
+            stat.deviceIdleMode = mDeviceIdleMode;
         }
-        if( allowed ) stat.allowed++;
-        else stat.blocked++;
-        stat.deviceIdleMode = mDeviceIdleMode;
 
         Slog.i(TAG,"noteRestrictionStatistics:" + allowed + ":" + recordName);
     }
 
     public void logRestrictionStatistics() {
-        for(int i=0;i<mRestrictionStatistics.size();i++) {
-            RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
-            if( stat.allowed > 0 ) {
-                Slog.i(TAG,"RestrictionStatistics: allowed :" + stat.getLog() + "; allowed=" + stat.allowed);
+        synchronized(this) {
+            for(int i=0;i<mRestrictionStatistics.size();i++) {
+                RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
+                if( stat.allowed > 0 ) {
+                    Slog.i(TAG,"RestrictionStatistics: allowed :" + stat.getLog() + "; allowed=" + stat.allowed);
+                }
             }
-        }
 
-        for(int i=0;i<mRestrictionStatistics.size();i++) {
-            RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
-            if( stat.blocked > 0 ) {
-                Slog.i(TAG,"RestrictionStatistics: blocked :" + stat.getLog() + "; blocked=" + stat.blocked);
+            for(int i=0;i<mRestrictionStatistics.size();i++) {
+                RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
+                if( stat.blocked > 0 ) {
+                    Slog.i(TAG,"RestrictionStatistics: blocked :" + stat.getLog() + "; blocked=" + stat.blocked);
+                }
             }
         }
     }
@@ -1477,12 +1482,18 @@ public class BaikalService extends SystemService {
             if (mProximitySensorEnabled) {
 
                 boolean isInteractive = mPowerManager.isInteractive();
-                if( !mProximityServiceWakeupEnabled && !isInteractive ) return;
-                if( !mProximityServiceSleepEnabled && isInteractive ) return;
+
+                Slog.i(TAG,"handleProximitySensorEvent: value=" + positive + ", time=" + time);
+
+                if( (!mProximityServiceWakeupEnabled && !isInteractive) ||
+                    (!mProximityServiceSleepEnabled && isInteractive) ) {
+                    AcquireWakelock(true);
+                    return;
+                }
+
+                AcquireWakelock(false);
 
                 //final long now = SystemClock.elapsedRealtime();
-                Slog.i(TAG,"handleProximitySensorEvent: value=" + positive + ", time=" + time);
-                AcquireWakelock();
                 if( positive == false ) {
                     proximityNegativeTime = time;
                     if( (time - proximityClickStart) < 2500 ) {
@@ -1521,10 +1532,11 @@ public class BaikalService extends SystemService {
             ReleaseWakelock();
         }
 
-        void setProximityTimeout() {
-            Message msg = mHandler.obtainMessage(MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT);
+        void setProximityTimeout(boolean wakeonly) {
+            final long timeout = wakeonly?500:3000; 
             mHandler.removeMessages(MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT);
-            mHandler.sendMessageDelayed(msg,3000);
+            Message msg = mHandler.obtainMessage(MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT);
+            mHandler.sendMessageDelayed(msg,timeout);
         }
 
         private void ReleaseWakelock() {
@@ -1534,8 +1546,8 @@ public class BaikalService extends SystemService {
             }
         }
 
-        private void AcquireWakelock() {
-            setProximityTimeout();
+        private void AcquireWakelock(boolean wakeonly) {
+            setProximityTimeout(wakeonly);
             if (!mProximityWakeLock.isHeld()) {
                 Slog.i(TAG,"ProximitySensor: AcquireWakelock()");
                 mProximityWakeLock.acquire();
