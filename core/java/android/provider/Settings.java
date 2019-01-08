@@ -5007,6 +5007,42 @@ public final class Settings {
         /** @hide */
         private static final Validator SLIM_RECENTS_BLACKLIST_VALUES_VALIDATOR = ANY_STRING_VALIDATOR;
 
+        /**
+        * How many rows to show in the qs panel when in portrait
+        * @hide
+        */
+        public static final String QS_ROWS_PORTRAIT = "qs_rows_portrait";
+
+	/** @hide */
+        private static final Validator QS_ROWS_PORTRAIT_VALIDATOR = NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+        * How many rows to show in the qs panel when in landscape
+        * @hide
+        */
+        public static final String QS_ROWS_LANDSCAPE = "qs_rows_landscape";
+
+	/** @hide */
+        private static final Validator QS_ROWS_LANDSCAPE_VALIDATOR = NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+        * How many columns to show in the qs panel when in portrait
+        * @hide
+        */
+        public static final String QS_COLUMNS_PORTRAIT = "qs_columns_portrait";
+
+	/** @hide */
+        private static final Validator QS_COLUMNS_PORTRAIT_VALIDATOR = NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+        * How many columns to show in the qs panel when in landscape
+        * @hide
+        */
+        public static final String QS_COLUMNS_LANDSCAPE = "qs_columns_landscape";
+
+	/** @hide */
+        private static final Validator QS_COLUMNS_LANDSCAPE_VALIDATOR = NON_NEGATIVE_INTEGER_VALIDATOR;
+
         /***************************
          * AICP System Settings end
          ***************************/
@@ -5158,6 +5194,10 @@ public final class Settings {
             SLIM_MEM_TEXT_COLOR,
             SLIM_RECENTS_CORNER_RADIUS,
             SLIM_RECENTS_BLACKLIST_VALUES,
+            QS_ROWS_PORTRAIT,
+            QS_ROWS_LANDSCAPE,
+            QS_COLUMNS_PORTRAIT,
+            QS_COLUMNS_LANDSCAPE,
             // CERBERUSOS Settings end
             NOTIFICATION_LIGHT_PULSE,
         };
@@ -5347,7 +5387,10 @@ public final class Settings {
             PRIVATE_SETTINGS.add(SLIM_MEM_TEXT_COLOR);
             PRIVATE_SETTINGS.add(SLIM_RECENTS_CORNER_RADIUS);
             PRIVATE_SETTINGS.add(SLIM_RECENTS_BLACKLIST_VALUES);
-
+            PRIVATE_SETTINGS.add(QS_ROWS_PORTRAIT);
+            PRIVATE_SETTINGS.add(QS_ROWS_LANDSCAPE);
+            PRIVATE_SETTINGS.add(QS_COLUMNS_PORTRAIT);
+            PRIVATE_SETTINGS.add(QS_COLUMNS_LANDSCAPE);
             // CERBERUSOS Settings end
         }
 
@@ -5519,7 +5562,11 @@ public final class Settings {
             VALIDATORS.put(NAVIGATION_BAR_ENABLED, NAVIGATION_BAR_ENABLED_VALIDATOR);
             VALIDATORS.put(BUTTON_BRIGHTNESS, BUTTON_BRIGHTNESS_VALIDATOR);
             VALIDATORS.put(BUTTON_BRIGHTNESS_ENABLED, BUTTON_BRIGHTNESS_ENABLED_VALIDATOR);
-        }
+            VALIDATORS.put(QS_ROWS_PORTRAIT, QS_ROWS_PORTRAIT_VALIDATOR);
+            VALIDATORS.put(QS_ROWS_LANDSCAPE, QS_ROWS_LANDSCAPE_VALIDATOR);
+	    VALIDATORS.put(QS_COLUMNS_PORTRAIT, QS_COLUMNS_PORTRAIT_VALIDATOR);
+	    VALIDATORS.put(QS_COLUMNS_LANDSCAPE, QS_COLUMNS_LANDSCAPE_VALIDATOR);
+       }
 
         /**
          * These entries are considered common between the personal and the managed profile,

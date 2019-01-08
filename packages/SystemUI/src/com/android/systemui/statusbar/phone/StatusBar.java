@@ -5372,6 +5372,18 @@ public class StatusBar extends SystemUI implements DemoMode,
             resolver.registerContentObserver(Settings.System.getUriFor(
                   Settings.System.USE_SLIM_RECENTS),
                   false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_ROWS_PORTRAIT),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_ROWS_LANDSCAPE),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_COLUMNS_PORTRAIT),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_COLUMNS_LANDSCAPE),
+                    false, this, UserHandle.USER_ALL);
             update();
         }
         @Override
@@ -5391,7 +5403,12 @@ public class StatusBar extends SystemUI implements DemoMode,
             } else if (uri.equals(Settings.System.getUriFor(
                     Settings.System.USE_SLIM_RECENTS))) {
                 updateRecentsMode();
-            }
+            } else if (uri.equals(Settings.System.getUriFor(Settings.System.QS_ROWS_PORTRAIT)) ||
+                uri.equals(Settings.System.getUriFor(Settings.System.QS_ROWS_LANDSCAPE)) ||
+                uri.equals(Settings.System.getUriFor(Settings.System.QS_COLUMNS_PORTRAIT)) ||
+                uri.equals(Settings.System.getUriFor(Settings.System.QS_COLUMNS_LANDSCAPE))) {
+                setQsRowsColumns();
+	    }
         }
 
         public void update() {
@@ -5399,9 +5416,15 @@ public class StatusBar extends SystemUI implements DemoMode,
             updateTickerTickDuration();
             setStatusDoubleTapToSleep();
             updateRecentsMode();
+            setQsRowsColumns();
         }
     }
 
+    private void setQsRowsColumns() {
+        if (mQSPanel != null) {
+            mQSPanel.updateResources();
+        }
+    }
 
     private void updateTickerAnimation() {
         mTickerAnimationMode = Settings.System.getIntForUser(mContext.getContentResolver(),
