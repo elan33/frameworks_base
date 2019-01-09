@@ -1646,6 +1646,7 @@ public class AlarmManagerService extends SystemService {
                     | AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED
                     | AlarmManager.FLAG_WAKE_FROM_IDLE))
                     == 0) {
+                Slog.d(TAG, "Pending Alarm : " + a);
                 mPendingWhileIdleAlarms.add(a);
                 return;
             }
@@ -1791,7 +1792,7 @@ public class AlarmManagerService extends SystemService {
             } else if (workSource == null && (callingUid < Process.FIRST_APPLICATION_UID
                     || UserHandle.isSameApp(callingUid, mSystemUiUid)
                     || ((mAppStateTracker != null)
-                        && mAppStateTracker.isUidPowerSaveUserWhitelisted(callingUid)))) {
+                        && mAppStateTracker.isUidPowerSaveWhitelisted(callingUid)))) {
                 flags |= AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED;
                 flags &= ~AlarmManager.FLAG_ALLOW_WHILE_IDLE;
             }
@@ -3537,6 +3538,8 @@ public class AlarmManagerService extends SystemService {
             {
                 int result = waitForAlarm(mNativeData);
 
+                Slog.v(TAG, "Alarm:" + result);
+
                 final long nowRTC = System.currentTimeMillis();
                 final long nowELAPSED = SystemClock.elapsedRealtime();
                 synchronized (mLock) {
@@ -3545,7 +3548,7 @@ public class AlarmManagerService extends SystemService {
 
                 triggerList.clear();
 
-                if ((result & TIME_CHANGED_MASK) != 0) {
+                if ( true /*(result & TIME_CHANGED_MASK) != 0*/) {
                     // The kernel can give us spurious time change notifications due to
                     // small adjustments it makes internally; we want to filter those out.
                     final long lastTimeChangeClockTime;
