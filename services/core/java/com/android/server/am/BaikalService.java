@@ -1035,7 +1035,7 @@ public class BaikalService extends SystemService {
 
         if( a.statsTag.contains("com.qualcomm.qti.biometrics.fingerprint.service") ) {
             if( mQtiBiometricsInitialized ) {
-                a.when += 55*60*1000;
+                a.when += 25*60*1000;
                 long whenElapsed = AlarmManagerService.convertToElapsed(a.when, a.type);
                 a.whenElapsed = whenElapsed;
                 a.maxWhenElapsed = whenElapsed;
