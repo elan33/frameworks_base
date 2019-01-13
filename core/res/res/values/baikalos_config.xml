@@ -2,7 +2,7 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
     <!-- Whether to cleanup fingerprints upon connection to the daemon and when user switches -->
-    <bool name="config_cleanupUnusedFingerprints">true</bool>
+    <bool name="config_cleanupUnusedFingerprints">false</bool>
 
     <!-- Any package that has one of the package names defined below will be prevented
          from using specific sensors in order to stop battery drain -->
@@ -17,5 +17,9 @@
         <item>com.facebook.orca</item>
         <item>com.Slack</item>
     </string-array>
+
+    <bool name="config_useBaikal8996AudioHal" translatable="false">false</bool>
+    <bool name="config_deviceHasHallSensor" translatable="false">false</bool>
+    <bool name="config_deviceHasLidSensor" translatable="false">false</bool>
 
 </resources>
