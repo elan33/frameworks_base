@@ -439,7 +439,11 @@ public class PhoneStatusBarPolicy implements Callback, Callbacks,
         boolean bluetoothVisible = false;
         if (mBluetooth != null) {
             if (mBluetooth.isBluetoothConnected()) {
-                int batteryLevel = mBluetooth.getConnectedDevices().get(0).getBatteryLevel();
+                int batteryLevel = 50;
+                try {
+                    batteryLevel = mBluetooth.getConnectedDevices().get(0).getBatteryLevel();
+                } catch( Exception ex ) {};
+
                 if (batteryLevel == 100) {
                     iconId = R.drawable.stat_sys_data_bluetooth_connected_battery_9;
                 } else if (batteryLevel >= 90) {
