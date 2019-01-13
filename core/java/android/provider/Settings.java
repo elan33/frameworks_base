@@ -11498,6 +11498,21 @@ public final class Settings {
         private static final Validator BAIKAL_HALL_SENSOR_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
+
+        /** @hide */
+        public static final String BAIKAL_LID_SENSOR_ENABLED = "baikal_lid_sensor_enabled";
+
+        /** @hide */
+        private static final Validator BAIKAL_LID_SENSOR_ENABLED_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /** @hide */
+        public static final String BAIKAL_LID_SENSOR_REVERSE = "baikal_lid_sensor_reverse";
+
+        /** @hide */
+        private static final Validator BAIKAL_LID_SENSOR_REVERSE_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
         /**
          * Battery Saver specific settings
          * This is encoded as a key=value list, separated by commas. Ex:

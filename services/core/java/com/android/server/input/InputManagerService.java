@@ -19,6 +19,8 @@ package com.android.server.input;
 import android.annotation.NonNull;
 import android.os.LocaleList;
 import android.os.ShellCallback;
+import android.os.SystemProperties;
+
 import android.util.Log;
 import android.view.Display;
 import com.android.internal.messages.nano.SystemMessageProto.SystemMessage;
@@ -311,6 +313,10 @@ public class InputManagerService extends IInputManager.Stub
     /** Whether to use the dev/input/event or uevent subsystem for the audio jack. */
     final boolean mUseDevInputEventForAudioJack;
 
+
+    private boolean mLidEnabled;
+    private boolean mLidReverse;
+
     public InputManagerService(Context context) {
         this.mContext = context;
         this.mHandler = new InputManagerHandler(DisplayThread.get().getLooper());
@@ -347,6 +353,11 @@ public class InputManagerService extends IInputManager.Stub
         registerPointerSpeedSettingObserver();
         registerShowTouchesSettingObserver();
         registerAccessibilityLargePointerSettingObserver();
+
+        mLidEnabled = Settings.Global.getInt(mContext.getContentResolver(),Settings.Global.BAIKAL_LID_SENSOR_ENABLED,0) == 1;
+        mLidReverse = Settings.Global.getInt(mContext.getContentResolver(),Settings.Global.BAIKAL_LID_SENSOR_REVERSE,0) == 1;
+
+        registerLidSettingObserver();
 
         mContext.registerReceiver(new BroadcastReceiver() {
             @Override
@@ -1574,6 +1585,27 @@ public class InputManagerService extends IInputManager.Stub
                 }, UserHandle.USER_ALL);
     }
 
+    private void registerLidSettingObserver() {
+        mContext.getContentResolver().registerContentObserver(
+                Settings.Global.getUriFor(Settings.Global.BAIKAL_LID_SENSOR_ENABLED), true,
+                new ContentObserver(mHandler) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        mLidEnabled = Settings.Global.getInt(mContext.getContentResolver(),Settings.Global.BAIKAL_LID_SENSOR_ENABLED,0) == 1;
+                        Slog.i(TAG, "BAIKAL_LID_SENSOR_ENABLED=" + mLidEnabled);
+                    }
+                });
+        mContext.getContentResolver().registerContentObserver(
+                Settings.Global.getUriFor(Settings.Global.BAIKAL_LID_SENSOR_REVERSE), true,
+                new ContentObserver(mHandler) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        mLidReverse = Settings.Global.getInt(mContext.getContentResolver(),Settings.Global.BAIKAL_LID_SENSOR_REVERSE,0) == 1;
+                        Slog.i(TAG, "BAIKAL_LID_SENSOR_REVERSE=" + mLidReverse);
+                    }
+                });
+    }
+
     private int getPointerSpeedSetting() {
         int speed = InputManager.DEFAULT_POINTER_SPEED;
         try {
@@ -1785,8 +1817,11 @@ public class InputManagerService extends IInputManager.Stub
         }
 
         if ((switchMask & SW_LID_BIT) != 0) {
-            final boolean lidOpen = ((switchValues & SW_LID_BIT) == 0);
-            mWindowManagerCallbacks.notifyLidSwitchChanged(whenNanos, lidOpen);
+            if( mLidEnabled ) {
+                boolean lidOpen = ((switchValues & SW_LID_BIT) == 0);
+                if( mLidReverse ) lidOpen = !lidOpen;
+                mWindowManagerCallbacks.notifyLidSwitchChanged(whenNanos, lidOpen);
+            }
         }
 
         if ((switchMask & SW_CAMERA_LENS_COVER_BIT) != 0) {
