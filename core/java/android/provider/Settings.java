@@ -4700,6 +4700,45 @@ public final class Settings {
                 BOOLEAN_VALIDATOR;
 
         /**
+         * @hide
+         */
+        public static final String VOLUME_ANSWER_CALL = "volume_answer_call";
+
+        /** @hide */
+        private static final Validator VOLUME_ANSWER_CALL_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+
+        /**
+         * @hide
+         */
+        public static final String VOLUME_REJECT_CALL = "volume_reject_call";
+
+        /** @hide */
+        private static final Validator VOLUME_REJECT_CALL_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * @hide
+         */
+        public static final String VOLUME_END_CALL = "volume_end_call";
+
+        /** @hide */
+        private static final Validator VOLUME_END_CALL_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * @hide
+         */
+        public static final String VOLUME_BUTTON_MUSIC_CONTROL = "volume_button_music_control";
+
+        /** @hide */
+        private static final Validator VOLUME_BUTTON_MUSIC_CONTROL_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+
+
+        /**
          * IMPORTANT: If you add a new public settings you also have to add it to
          * PUBLIC_SETTINGS below. If the new setting is hidden you have to add   
          * it to PRIVATE_SETTINGS below. Also add a validator that can validate
