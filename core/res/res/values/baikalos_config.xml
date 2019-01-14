@@ -22,4 +22,7 @@
     <bool name="config_deviceHasHallSensor" translatable="false">false</bool>
     <bool name="config_deviceHasLidSensor" translatable="false">false</bool>
 
+    <!-- Button brightness -->
+    <bool name="config_deviceHasVariableButtonBrightness" translatable="false">false</bool>
+
 </resources>
