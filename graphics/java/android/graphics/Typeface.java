@@ -38,6 +38,8 @@ import android.util.LongSparseArray;
 import android.util.LruCache;
 import android.util.SparseArray;
 
+import android.os.SystemProperties;
+
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.util.Preconditions;
@@ -153,7 +155,7 @@ public class Typeface {
     // Must be the same as the C++ constant in core/jni/android/graphics/FontFamily.cpp
     /** @hide */
     public static final int RESOLVE_BY_FONT_TABLE = -1;
-    private static final String DEFAULT_FAMILY = "sans-serif";
+    private static String DEFAULT_FAMILY = "sans-serif";
 
     // Style value for building typeface.
     private static final int STYLE_NORMAL = 0;
@@ -1136,7 +1138,26 @@ public class Typeface {
         sSystemFontMap = Collections.unmodifiableMap(systemFontMap);
         sSystemFallbackMap = Collections.unmodifiableMap(systemFallbackMap);
 
-        setDefault(sSystemFontMap.get(DEFAULT_FAMILY));
+        try {
+
+            boolean useGoogle = SystemProperties.get("persist.baikal.use_google_sans", "0").equals("1");
+            if( useGoogle ) {
+                Typeface sGoogle = sSystemFontMap.get("google-sans");
+                if( sGoogle == null ) { 
+                    DEFAULT_FAMILY = "sans-serif";
+                    setDefault(sSystemFontMap.get(DEFAULT_FAMILY));
+                } else {
+                    DEFAULT_FAMILY = "google-sans";
+                    setDefault(sGoogle);
+                }
+            } else {
+                DEFAULT_FAMILY = "sans-serif";
+                setDefault(sSystemFontMap.get(DEFAULT_FAMILY));
+            }
+        } catch (Exception edf) {
+            DEFAULT_FAMILY = "sans-serif";
+            setDefault(sSystemFontMap.get(DEFAULT_FAMILY));
+        }
 
         // Set up defaults and typefaces exposed in public API
         DEFAULT         = create((String) null, 0);
