@@ -2855,6 +2855,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             } else if ("0".equals(navBarOverride)) {
                 mHasNavigationBar = true;
             }
+
+            Settings.System.putIntForUser(resolver,
+                                Settings.System.NAVIGATION_BAR_ENABLED, mHasNavigationBar? 1 : 0, UserHandle.USER_CURRENT);
+
         } else {
             mNavBarEnabled = navBarEnabled == 1;
             mHasNavigationBar = mNavBarEnabled;
@@ -2987,9 +2991,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             final boolean defaultToNavigationBar = resources
                     .getBoolean(com.android.internal.R.bool.config_defaultToNavigationBar);
 
-            final boolean navBarEnabled = Settings.System.getIntForUser(resolver,
-                    Settings.System.NAVIGATION_BAR_ENABLED, defaultToNavigationBar ? 1 : 0,
-                            UserHandle.USER_CURRENT) == 1;
+            final int navBarEnabledSetting = Settings.System.getIntForUser(resolver,
+                    Settings.System.NAVIGATION_BAR_ENABLED, -1,
+                            UserHandle.USER_CURRENT);
+
+            boolean navBarEnabled = false;
+            if( navBarEnabledSetting == -1 ) navBarEnabled = defaultToNavigationBar;
+            else navBarEnabled = navBarEnabledSetting == 1;
+
             final boolean buttonBrightnessEnabled = Settings.System.getIntForUser(resolver,
                     Settings.System.BUTTON_BRIGHTNESS_ENABLED, 0, UserHandle.USER_CURRENT) == 1;
             if (navBarEnabled != mNavBarEnabled) {
