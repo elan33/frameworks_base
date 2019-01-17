@@ -19,6 +19,7 @@
     </string-array>
 
     <bool name="config_useBaikal8996AudioHal" translatable="false">false</bool>
+    <bool name="config_useBaikalLeecoDevice" translatable="false">false</bool>
     <bool name="config_deviceHasHallSensor" translatable="false">false</bool>
     <bool name="config_deviceHasLidSensor" translatable="false">false</bool>
 
