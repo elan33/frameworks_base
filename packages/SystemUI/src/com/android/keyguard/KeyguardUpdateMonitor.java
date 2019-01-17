@@ -1138,9 +1138,12 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener {
         String wakeupReason = SystemProperties.get("power.wake_reason","unknown");
 
         if( wakeupReason.equals("android.policy:POWER") ||
+            wakeupReason.equals("android.server.power:POWER") ||
+            wakeupReason.equals("android.policy:KEY") ||
             wakeupReason.equals("android.policy:LID") ||
             wakeupReason.equals("android.policy:GESTURE") ||
             wakeupReason.equals("com.android.systemui:NODOZE") ||
+            wakeupReason.equals("android.policy:FINGERPRINT") ||
             wakeupReason.equals("wakelock:qfp-service") ) {
 
             int userId = getCurrentUser();
