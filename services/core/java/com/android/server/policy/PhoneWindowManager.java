@@ -1887,7 +1887,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             Slog.i(TAG, "getResolvedLongPressOnPowerBehavior=LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM");
             return LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM;
         }
-        if (mTorchLongPressPowerEnabled && !isScreenOn()) {
+        if (mTorchLongPressPowerEnabled && keyguardOn() || !isScreenOn()) {
             Slog.i(TAG, "getResolvedLongPressOnPowerBehavior=LONG_PRESS_POWER_TORCH");
             return LONG_PRESS_POWER_TORCH;
         }
@@ -2840,8 +2840,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 Settings.System.NAVIGATION_BAR_ENABLED, -1,
                         UserHandle.USER_CURRENT);
         if (mDeviceHardwareKeys != 0) {
-            Slog.d(TAG, "setInitialDisplaySize: set qemu.hw.mainkeys=" + (mNavBarEnabled ? "0" : "1"));
-            SystemProperties.set("qemu.hw.mainkeys", mNavBarEnabled ? "0" : "1");
+            Slog.d(TAG, "setInitialDisplaySize: set qemu.hw.mainkeys=" + (navBarEnabled == 1 ? "0" : "1"));
+            SystemProperties.set("qemu.hw.mainkeys", navBarEnabled == 1 ? "0" : "1");
         }
 
         // Allow a system property to override this. Used by the emulator.
