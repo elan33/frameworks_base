@@ -20,7 +20,23 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">Кофеин</string>
+    <string name="accessibility_quick_settings_caffeine_off">Кофеин выкл</string>
+    <string name="accessibility_quick_settings_caffeine_on">Кофеин вкл</string>
     <!-- AOD QS tile -->
+    <string name="quick_settings_aod_label">AOD</string>
+    <string name="lockscreen_default">По умолчанию</string>
+    <string name="lockscreen_hidden">Отсутствует</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="custom_hint">Свайп от значка для запуска</string>
+    <string name="global_action_reboot">Перезагрузка</string>
+    <string name="global_action_reboot_more">Перезагрузка\u2026</string>
+    <string name="global_action_reboot_sub">Система</string>
+    <string name="global_action_reboot_recovery">Восстановление</string>
+    <string name="global_action_reboot_bootloader">Загрузчик</string>
     <!-- ADB over network tile -->
+    <string name="quick_settings_network_adb_enabled_label">Разрешено</string>
+    <string name="quick_settings_network_adb_disabled_label">Запрещено</string>
+    <string name="quick_settings_network_adb_label">ADB по сети</string>
+    <string name="quick_settings_network_adb_toast">USB отладка не включена</string>
 </resources>
