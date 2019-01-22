@@ -20,7 +20,22 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">Koffein</string>
+    <string name="accessibility_quick_settings_caffeine_off">Koffein aus</string>
+    <string name="accessibility_quick_settings_caffeine_on">Koffein an</string>
     <!-- AOD QS tile -->
+    <string name="quick_settings_aod_label">Always-On-Display</string>
+    <string name="lockscreen_default">Standard</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="custom_hint">Zum Öffnen vom Symbol wischen</string>
+    <string name="global_action_reboot">Neustarten</string>
+    <string name="global_action_reboot_more">Neustarten\u2026</string>
+    <string name="global_action_reboot_sub">System</string>
+    <string name="global_action_reboot_recovery">Recovery</string>
+    <string name="global_action_reboot_bootloader">Bootloader</string>
     <!-- ADB over network tile -->
+    <string name="quick_settings_network_adb_enabled_label">Aktiviert</string>
+    <string name="quick_settings_network_adb_disabled_label">Deaktiviert</string>
+    <string name="quick_settings_network_adb_label">ADB über Netzwerk</string>
+    <string name="quick_settings_network_adb_toast">USB-Debugging ist nicht aktiviert</string>
 </resources>
