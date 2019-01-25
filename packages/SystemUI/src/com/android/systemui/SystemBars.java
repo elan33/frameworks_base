@@ -68,7 +68,12 @@ public class SystemBars extends SystemUI {
         }
         mStatusBar.mContext = mContext;
         mStatusBar.mComponents = mComponents;
-        mStatusBar.start();
+        try {
+            mStatusBar.start();
+        } catch (Throwable t) {
+            throw andLog("Error starting status bar component: " + clsName, t);
+        }
+
         if (DEBUG) Log.d(TAG, "started " + mStatusBar.getClass().getSimpleName());
     }
 
