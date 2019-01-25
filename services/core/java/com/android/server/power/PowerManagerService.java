@@ -907,6 +907,10 @@ public final class PowerManagerService extends SystemService
         resolver.registerContentObserver(Settings.System.getUriFor(
                 Settings.System.BUTTON_TIMEOUT),
                 false, mSettingsObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.BUTTON_BACKLIGHT_ON_TOUCH_ONLY),
+                false, mSettingsObserver, UserHandle.USER_ALL);
+
         IVrManager vrManager = (IVrManager) getBinderService(Context.VR_SERVICE);
         if (vrManager != null) {
             try {
@@ -1452,9 +1456,10 @@ public final class PowerManagerService extends SystemService
 
     private boolean wakeUpNoUpdateLocked(long eventTime, String reason, int reasonUid,
             String opPackageName, int opUid) {
-        if (DEBUG_SPEW) {
-            Slog.d(TAG, "wakeUpNoUpdateLocked: eventTime=" + eventTime + ", uid=" + reasonUid);
-        }
+        //if (DEBUG_SPEW) {
+            Slog.d(TAG, "wakeUpNoUpdateLocked: eventTime=" + eventTime + ", uid=" + reasonUid, new Throwable());
+            
+        //}
 
         if (eventTime < mLastSleepTime || mWakefulness == WAKEFULNESS_AWAKE
                 || !mBootCompleted || !mSystemReady) {
@@ -1495,7 +1500,7 @@ public final class PowerManagerService extends SystemService
 
 
     void setWakupReasonLocked(String reason) {
-        Slog.d(TAG, "setWakupReason="+reason);
+        Slog.d(TAG, "setWakeupReason="+reason);
         try {
             SystemProperties.set("power.wake_reason",reason);
         }
@@ -1652,6 +1657,10 @@ public final class PowerManagerService extends SystemService
                 mNotifier.onWakefulnessChangeStarted(wakefulness, reason);
             }
             SystemPropertiesSet("power.wakefulness",Integer.toString(mWakefulness));
+        
+            if( mBaikalService != null ) {
+                mBaikalService.setWakefulness(wakefulness,reason);
+            }
         }
     }
 
@@ -2810,6 +2819,11 @@ public final class PowerManagerService extends SystemService
             return true;
         }
         if (mDisplayPowerRequest.isBrightOrDim()) {
+            if( mBaikalService != null ) {
+                if( mBaikalService.isReaderMode() ) {   
+                    return false;
+                }
+            }
             // If we asked for the screen to be on but it is off due to the proximity
             // sensor then we may suspend but only if the configuration allows it.
             // On some hardware it may not be safe to suspend because the proximity

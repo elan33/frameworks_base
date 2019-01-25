@@ -220,6 +220,7 @@ java_library {
         "core/java/android/os/ICancellationSignal.aidl",
         "core/java/android/os/IDeviceIdentifiersPolicyService.aidl",
         "core/java/android/os/IDeviceIdleController.aidl",
+        "core/java/android/os/IBaikalServiceController.aidl",
         "core/java/android/os/IHardwarePropertiesManager.aidl",
         "core/java/android/os/IIncidentManager.aidl",
         "core/java/android/os/IIncidentReportStatusListener.aidl",

@@ -24993,6 +24993,10 @@ public class ActivityManagerService extends IActivityManager.Stub
             if (mCurResumedPackage != null) {
                 mBatteryStatsService.noteEvent(BatteryStats.HistoryItem.EVENT_TOP_START,
                         mCurResumedPackage, mCurResumedUid);
+                if( mBaikalService != null ) {
+                    mBaikalService.topAppChanged(act);
+                }
+
             }
         }
         return act;

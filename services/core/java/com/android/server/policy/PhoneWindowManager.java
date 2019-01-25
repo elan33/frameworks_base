@@ -1887,7 +1887,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             Slog.i(TAG, "getResolvedLongPressOnPowerBehavior=LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM");
             return LONG_PRESS_POWER_SHUT_OFF_NO_CONFIRM;
         }
-        if (mTorchLongPressPowerEnabled && keyguardOn() || !isScreenOn()) {
+        if (mTorchLongPressPowerEnabled && (keyguardOn() || !isScreenOn()) ) {
             Slog.i(TAG, "getResolvedLongPressOnPowerBehavior=LONG_PRESS_POWER_TORCH");
             return LONG_PRESS_POWER_TORCH;
         }

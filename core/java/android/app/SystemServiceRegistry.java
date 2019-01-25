@@ -106,11 +106,13 @@ import android.os.BatteryManager;
 import android.os.BatteryStats;
 import android.os.Build;
 import android.os.DeviceIdleManager;
+import android.os.BaikalServiceManager;
 import android.os.DropBoxManager;
 import android.os.HardwarePropertiesManager;
 import android.os.IBatteryPropertiesRegistrar;
 import android.os.IBinder;
 import android.os.IDeviceIdleController;
+import android.os.IBaikalServiceController;
 import android.os.IHardwarePropertiesManager;
 import android.os.IPowerManager;
 import android.os.IRecoverySystem;
@@ -464,13 +466,6 @@ final class SystemServiceRegistry {
                 return new StatsManager(ctx.getOuterContext());
             }});
 
-        registerService(Context.STATUS_BAR_SERVICE, StatusBarManager.class,
-                new CachedServiceFetcher<StatusBarManager>() {
-            @Override
-            public StatusBarManager createService(ContextImpl ctx) {
-                return new StatusBarManager(ctx.getOuterContext());
-            }});
-
         registerService(Context.STORAGE_SERVICE, StorageManager.class,
                 new CachedServiceFetcher<StorageManager>() {
             @Override
@@ -672,6 +667,13 @@ final class SystemServiceRegistry {
             @Override
             public WindowManager createService(ContextImpl ctx) {
                 return new WindowManagerImpl(ctx);
+            }});
+
+        registerService(Context.STATUS_BAR_SERVICE, StatusBarManager.class,
+                new CachedServiceFetcher<StatusBarManager>() {
+            @Override
+            public StatusBarManager createService(ContextImpl ctx) {
+                return new StatusBarManager(ctx.getOuterContext());
             }});
 
         registerService(Context.USER_SERVICE, UserManager.class,
@@ -997,6 +999,18 @@ final class SystemServiceRegistry {
                                         Context.DEVICE_IDLE_CONTROLLER));
                         return new DeviceIdleManager(ctx.getOuterContext(), service);
                     }});
+
+        registerService(Context.BAIKAL_SERVICE_CONTROLLER, BaikalServiceManager.class,
+                new CachedServiceFetcher<BaikalServiceManager>() {
+                    @Override
+                    public BaikalServiceManager createService(ContextImpl ctx)
+                            throws ServiceNotFoundException {
+                        IBaikalServiceController service = IBaikalServiceController.Stub.asInterface(
+                                ServiceManager.getServiceOrThrow(
+                                        Context.BAIKAL_SERVICE_CONTROLLER));
+                        return new BaikalServiceManager(ctx.getOuterContext(), service);
+                    }});
+
     }
 
     /**
@@ -1011,6 +1025,11 @@ final class SystemServiceRegistry {
      */
     public static Object getSystemService(ContextImpl ctx, String name) {
         ServiceFetcher<?> fetcher = SYSTEM_SERVICE_FETCHERS.get(name);
+        if( fetcher == null ) {
+            Log.w(TAG, "getService(" + name + ") fetcher=null");
+        } else {
+            Log.w(TAG, "getService(" + name + ") service=" + fetcher.getService(ctx));
+        }
         return fetcher != null ? fetcher.getService(ctx) : null;
     }
 
@@ -1018,6 +1037,7 @@ final class SystemServiceRegistry {
      * Gets the name of the system-level service that is represented by the specified class.
      */
     public static String getSystemServiceName(Class<?> serviceClass) {
+        Log.w(TAG, "getSystemServiceName()=" + SYSTEM_SERVICE_NAMES.get(serviceClass));
         return SYSTEM_SERVICE_NAMES.get(serviceClass);
     }
 
@@ -1027,6 +1047,7 @@ final class SystemServiceRegistry {
      */
     private static <T> void registerService(String serviceName, Class<T> serviceClass,
             ServiceFetcher<T> serviceFetcher) {
+        Log.w(TAG, "registerService(" + serviceName + "," + serviceClass + "," + serviceFetcher + ")");
         SYSTEM_SERVICE_NAMES.put(serviceClass, serviceName);
         SYSTEM_SERVICE_FETCHERS.put(serviceName, serviceFetcher);
     }

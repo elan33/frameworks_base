@@ -44,6 +44,8 @@ import android.os.PowerManagerInternal;
 import android.os.UserHandle;
 import android.os.Process;
 import android.os.SystemClock;
+import android.os.IBaikalServiceController;
+import android.os.BaikalServiceManager;
 import android.util.Slog;
 import android.util.ArrayMap;
 import android.net.NetworkInfo;
@@ -62,6 +64,44 @@ import com.android.server.DeviceIdleController;
 import com.android.server.AlarmManagerService;
 import com.android.server.AppOpsService;
 import com.android.server.SystemService;
+
+import android.os.Environment;
+import android.os.FileUtils;
+
+import android.util.Xml;
+
+import com.android.internal.annotations.GuardedBy;
+import com.android.internal.app.IBatteryStats;
+import com.android.internal.os.AtomicFile;
+import com.android.internal.os.BackgroundThread;
+import com.android.internal.util.DumpUtils;
+import com.android.internal.util.FastXmlSerializer;
+import com.android.internal.util.Preconditions;
+import com.android.internal.util.XmlUtils;
+
+
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlSerializer;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import android.util.ArrayMap;
+import android.util.ArraySet;
+import android.util.KeyValueListParser;
+import android.util.MutableLong;
+import android.util.Pair;
+
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -87,7 +127,6 @@ import android.hardware.camera2.CameraManager;
 import android.provider.Settings;
 
 import java.util.List;
-import java.util.Arrays;
 
 
 public class BaikalService extends SystemService {
@@ -102,6 +141,10 @@ public class BaikalService extends SystemService {
     private static final int MESSAGE_LIGHT_DEVICE_IDLE_CHANGED = 101;
 
     private static final int MESSAGE_PROXIMITY_WAKELOCK_TIMEOUT = 200;
+
+    private static final int MESSAGE_WRITE_CONFIG = 900;
+
+    private static final int MESSAGE_WAKEFULNESS_CHANGED = 300;
 
     private final String [] mGoogleServicesIdleBlackListed = {
         "com.google.android.location.geocode.GeocodeService",
@@ -124,12 +167,15 @@ public class BaikalService extends SystemService {
 
     private boolean mDeviceIdleMode;
     private boolean mLightDeviceIdleMode;
+    private int mWakefulness;
+    private int mWakefulnessReason;
     private String mLastWakeupReason;
     private String mLastSleepReason;
     private boolean mTorchLongPressPowerEnabled;
     private boolean mTorchIncomingCall;
     private boolean mTorchNotification;
     private boolean mActiveIncomingCall;
+    private boolean mIsReaderModeActive;
 
     private boolean mTorchEnabled;
 
@@ -146,6 +192,10 @@ public class BaikalService extends SystemService {
     private boolean mQtiBiometricsInitialized;
 
     private boolean mWlBlockEnabled;
+
+
+    private final ArrayMap<String, ApplicationProfileInfo> mApplicationProfiles = new ArrayMap<>();
+
 
     Thread mTorchThread = null;
 
@@ -177,6 +227,9 @@ public class BaikalService extends SystemService {
 
     private boolean mNetworkAllowedWhileIdle;
 
+    public final AtomicFile mAppsConfigFile;
+
+
     // Set of app ids that we will always respect the wake locks for.
     int[] mDeviceIdleWhitelist = new int[0];
 
@@ -195,6 +248,9 @@ public class BaikalService extends SystemService {
         mHandlerThread = new MyHandlerThread();
         mHandlerThread.start();
         mHandler = new MyHandler(mHandlerThread.getLooper());
+
+        mAppsConfigFile = new AtomicFile(new File(getSystemDir(), "baikal_service_apps.xml"));
+
     }
 
     @Override
@@ -202,7 +258,11 @@ public class BaikalService extends SystemService {
         if( DEBUG ) {
             Slog.i(TAG,"onStart()");
         }
+        mBinderService = new BinderService();
+        publishBinderService(Context.BAIKAL_SERVICE_CONTROLLER, mBinderService);
         publishLocalService(BaikalService.class, this);
+
+        readConfigFileLocked();
     }
 
     @Override
@@ -313,6 +373,14 @@ public class BaikalService extends SystemService {
                     mProximityService.handleProximityTimeout();
                 }
                 break;
+                case MESSAGE_WRITE_CONFIG: {
+                    // Does not hold a wakelock. Just let this happen whenever.
+                    handleWriteConfigFile();
+                } break;
+                case MESSAGE_WAKEFULNESS_CHANGED: {
+                    onWakefulnessChanged();
+                } break;
+
             }
         }
     }
@@ -802,6 +870,11 @@ public class BaikalService extends SystemService {
         }
     };
 
+    public boolean isReaderMode() {
+        synchronized(this) {
+            return isReaderModeLocked();
+        }
+    }
 
     public boolean isDeviceIdleMode() {
         synchronized(this) {
@@ -836,6 +909,30 @@ public class BaikalService extends SystemService {
     public boolean isNetworkAllowedWhileIdle() {
         return false;
     }
+
+    void wakefulnessChanged() {
+        mHandler.removeMessages(MESSAGE_WAKEFULNESS_CHANGED);
+        mHandler.sendEmptyMessage(MESSAGE_WAKEFULNESS_CHANGED);
+    }
+
+    public void setWakefulness(int wakefulness, int reason) {
+        synchronized(this) {
+            setWakefulnessLocked(wakefulness,reason);
+        }
+    }
+
+    public int getWakefulness() {
+        synchronized(this) {
+            return getWakefulnessLocked(); 
+        }        
+    }
+
+    public int getWakefulnessReason() {
+        synchronized(this) {
+            return getWakefulnessReasonLocked(); 
+        }        
+    }
+
 
     public String lastWakeupReason() {
         synchronized(this) {
@@ -1252,6 +1349,10 @@ public class BaikalService extends SystemService {
     }
 
 
+    public boolean isReaderModeLocked() {
+        return false; //mIsReaderModeActive;
+    }
+
     public boolean isDeviceIdleModeLocked() {
         return mDeviceIdleMode;
     }
@@ -1290,6 +1391,21 @@ public class BaikalService extends SystemService {
     private void onLightDeviceIdleModeChanged() {
     }
 
+    public void setWakefulnessLocked(int wakefulness, int reason) {
+        mWakefulness = wakefulness;
+        mWakefulnessReason = reason;
+        wakefulnessChanged();
+    }
+
+    public int getWakefulnessLocked() {
+        return mWakefulness;
+    }
+
+    public int getWakefulnessReasonLocked() {
+        return mWakefulnessReason;
+    }
+
+
     public String lastWakeupReasonLocked() {
         return mLastWakeupReason;
     }
@@ -1310,7 +1426,343 @@ public class BaikalService extends SystemService {
         }
     }
 
+
+    private String awakePerformanceProfile = "default"; 
+    private String awakeThermalProfile = "default"; 
+    private void onWakefulnessChanged() {
+        synchronized(this) {
+            if( getWakefulnessLocked() == 0 ) {
+                awakePerformanceProfile = mCurrentPerformanceProfile;
+                awakeThermalProfile = mCurrentThermalProfile;
+                setPerformanceProfile("battery");
+                setThermalProfile("cool");
+            } else {
+                setPerformanceProfile(awakePerformanceProfile);
+                setThermalProfile(awakeThermalProfile);
+            }
+        }
+    }
+
+
+    public void topAppChanged(ActivityRecord act) {
+        if( act == null ) {
+            Slog.i(TAG,"topAppChanged: empty top activity");
+            setPerformanceProfile("default");
+            setThermalProfile("default");
+            return;
+        }
+
+        Slog.i(TAG,"topAppChanged: top activity=" + act.packageName);
+
+        ApplicationProfileInfo info = null;
+        synchronized(this) {
+            info = getAppProfileLocked(act.packageName);
+        }
+
+        if( info == null ) {
+            Slog.i(TAG,"topAppChanged: default top activity");
+            setPerformanceProfile("default");
+            setThermalProfile("default");
+            return;   
+        }
+
+        setPerformanceProfile(info.perfProfile);
+        setThermalProfile(info.thermProfile);
+    }
+
+    private String mCurrentPerformanceProfile = "none";
+    private void setPerformanceProfile(String profile) {
+        synchronized(mCurrentPerformanceProfile) {
+            if ( !mCurrentPerformanceProfile.equals(profile) ) {
+                if( profile.equals("reader") ) {
+                    mIsReaderModeActive = true;
+                } else {
+                    mIsReaderModeActive = false;
+                }
+                mCurrentPerformanceProfile = profile;
+                SystemPropertiesSet("baikal.perf.profile",profile);
+            }
+        }
+    }
+
+    private String mCurrentThermalProfile = "none";
+    private void setThermalProfile(String profile) {
+        synchronized(mCurrentThermalProfile) {
+            if ( !mCurrentThermalProfile.equals(profile) ) {
+                mCurrentThermalProfile = profile;
+                SystemPropertiesSet("baikal.therm.profile",profile);
+            }
+        }
+    }
   
+
+    private void SystemPropertiesSet(String key, String value) {
+        Slog.d(TAG, "SystemProperties.set("+key+","+value+")");
+        try {
+            SystemProperties.set(key,value);
+        }
+        catch( Exception e ) {
+            Slog.e(TAG, "SystemPropertiesSet: unable to set property "+key+" to "+value);
+        }
+    }
+
+
+    private ApplicationProfileInfo getOrCreateAppProfileLocked(String packageName) {
+        if( mApplicationProfiles.containsKey(packageName) ) {
+            return mApplicationProfiles.get(packageName);
+        }
+        ApplicationProfileInfo info = new ApplicationProfileInfo();
+        info.packageName = packageName;
+        mApplicationProfiles.put(packageName, info);
+        Slog.i(TAG,"getAppProfileLocked created profile for package=" + packageName);
+        return info;
+    }
+
+    private ApplicationProfileInfo getAppProfileLocked(String packageName) {
+        if( mApplicationProfiles.containsKey(packageName) ) {
+            return mApplicationProfiles.get(packageName);
+        }
+        Slog.i(TAG,"getAppProfileLocked package not found package=" + packageName);
+        return null;
+    }
+
+    private void setAppProfileLocked(ApplicationProfileInfo info) {
+        Slog.i(TAG,"setAppProfileLocked set info for package=" + info.packageName);
+        mApplicationProfiles.put(info.packageName, info);
+        writeConfigFileLocked();
+    }
+
+
+    public String getAppPerfProfileInternal(String packageName) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getAppProfileLocked(packageName);
+            if( info != null ) {
+                Slog.i(TAG,"getAppPerfProfile for package=" + packageName + ", perfProfile=" + info.perfProfile);
+                return info.perfProfile;
+            }
+        }
+        Slog.i(TAG,"getAppPerfProfile default for package=" + packageName);
+        return "default";
+
+    }
+    public String getAppThermProfileInternal(String packageName) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getAppProfileLocked(packageName);
+            if( info != null ) {
+                Slog.i(TAG,"getAppThermProfile for package=" + packageName + ", perfProfile=" + info.thermProfile);
+                return info.thermProfile;
+            }
+        }
+        Slog.i(TAG,"getAppThermProfile default for package=" + packageName);
+        return "default";
+    }
+    public void setAppPerfProfileInternal(String packageName, String profile) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
+            info.perfProfile = profile;
+            setAppProfileLocked(info);
+        }
+        Slog.i(TAG,"setAppPerfProfile package=" + packageName + ", profile=" + profile);
+    }
+
+    public void setAppThermProfileInternal(String packageName, String profile) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
+            info.thermProfile = profile;
+            setAppProfileLocked(info);
+        }
+        Slog.i(TAG,"setAppThermProfile package=" + packageName + ", profile=" + profile);
+    }
+    
+    public boolean isAppRestrictedProfileInternal(String packageName) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getAppProfileLocked(packageName);
+            if( info != null ) return  info.isRestricted;
+        }
+        Slog.i(TAG,"getAppThermProfile package=" + packageName);
+        return false;
+    }
+
+    public void setAppRestrictedProfileInternal(String packageName, boolean restricted) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
+            info.isRestricted = restricted;
+            setAppProfileLocked(info);
+        }
+    }
+
+    public int getAppPriorityInternal(String packageName) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getAppProfileLocked(packageName);
+            if( info != null ) return  info.priority;
+        }
+        Slog.i(TAG,"getAppThermProfile package=" + packageName);
+        return 0;
+    }
+
+    public int setAppPriorityInternal(String packageName, int priority) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
+            if( priority == -1 ) {
+                info.isRestricted = true;
+            } else {
+                info.isRestricted = false;
+                info.priority = priority;
+            }
+            setAppProfileLocked(info);
+        }
+        Slog.i(TAG,"setAppPriority package=" + packageName + ", priority=" + priority);
+        return 0;
+    }
+
+    public String getDefaultPerfProfileInternal() {
+        return SystemProperties.get("persist.baikal.perf.default","balance");
+    }
+
+    public void setDefaultPerfProfileInternal(String profile) {
+        SystemPropertiesSet("persist.baikal.perf.default",profile);
+        SystemPropertiesSet("baikal.perf.profile",mCurrentPerformanceProfile);
+    }
+
+    public String getDefaultThermProfileInternal() {
+        return SystemProperties.get("persist.baikal.therm.default","balance");
+    }
+
+    public void setDefaultThermProfileInternal(String profile) {
+        SystemPropertiesSet("persist.baikal.therm.default",profile);
+        SystemPropertiesSet("baikal.therm.profile",mCurrentThermalProfile);
+    }
+
+
+
+    void readConfigFileLocked() {
+        Slog.d(TAG, "Reading config from " + mAppsConfigFile.getBaseFile());
+        mApplicationProfiles.clear();
+        FileInputStream stream;
+        try {
+            stream = mAppsConfigFile.openRead();
+        } catch (FileNotFoundException e) {
+            Slog.d(TAG, "Reading config failed! ", e);
+            return;
+        }
+        try {
+            XmlPullParser parser = Xml.newPullParser();
+            parser.setInput(stream, StandardCharsets.UTF_8.name());
+            readConfigFileLocked(parser);
+        } catch (XmlPullParserException e) {
+            Slog.d(TAG, "Parsing config failed! ", e);
+        } finally {
+            try {
+                stream.close();
+            } catch (IOException e) {
+            }
+        }
+    }
+
+    private void readConfigFileLocked(XmlPullParser parser) {
+        final PackageManager pm = getContext().getPackageManager();
+
+        try {
+            int type;
+            while ((type = parser.next()) != XmlPullParser.START_TAG
+                    && type != XmlPullParser.END_DOCUMENT) {
+                ;
+            }
+
+            if (type != XmlPullParser.START_TAG) {
+                throw new IllegalStateException("no start tag found");
+            }
+
+            int outerDepth = parser.getDepth();
+            while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
+                    && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
+                if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
+                    continue;
+                }
+
+                String tagName = parser.getName();
+                switch (tagName) {
+                    case "app":
+                        ApplicationProfileInfo info = new ApplicationProfileInfo();
+                        info.packageName = parser.getAttributeValue(null, "pn");
+                        info.perfProfile = parser.getAttributeValue(null, "pp");
+                        info.thermProfile = parser.getAttributeValue(null, "tp");
+                        info.isRestricted = Boolean.parseBoolean(parser.getAttributeValue(null, "rs"));
+                        info.priority = Integer.parseInt(parser.getAttributeValue(null, "pr"));
+                        setAppProfileLocked(info);
+                        break;
+                    default:
+                        Slog.w(TAG, "Unknown element under <config>: "
+                                + parser.getName());
+                        XmlUtils.skipCurrentTag(parser);
+                        break;
+                }
+            }
+
+        } catch (IllegalStateException e) {
+            Slog.w(TAG, "Failed parsing config " + e);
+        } catch (NullPointerException e) {
+            Slog.w(TAG, "Failed parsing config " + e);
+        } catch (NumberFormatException e) {
+            Slog.w(TAG, "Failed parsing config " + e);
+        } catch (XmlPullParserException e) {
+            Slog.w(TAG, "Failed parsing config " + e);
+        } catch (IOException e) {
+            Slog.w(TAG, "Failed parsing config " + e);
+        } catch (IndexOutOfBoundsException e) {
+            Slog.w(TAG, "Failed parsing config " + e);
+        }
+    }
+
+    void writeConfigFileLocked() {
+        mHandler.removeMessages(MESSAGE_WRITE_CONFIG);
+        mHandler.sendEmptyMessageDelayed(MESSAGE_WRITE_CONFIG, 5000);
+    }
+
+    void handleWriteConfigFile() {
+        final ByteArrayOutputStream memStream = new ByteArrayOutputStream();
+
+        try {
+            synchronized (this) {
+                XmlSerializer out = new FastXmlSerializer();
+                out.setOutput(memStream, StandardCharsets.UTF_8.name());
+                writeConfigFileLocked(out);
+            }
+        } catch (IOException e) {
+        }
+
+        synchronized (mAppsConfigFile) {
+            FileOutputStream stream = null;
+            try {
+                stream = mAppsConfigFile.startWrite();
+                memStream.writeTo(stream);
+                stream.flush();
+                FileUtils.sync(stream);
+                stream.close();
+                mAppsConfigFile.finishWrite(stream);
+            } catch (IOException e) {
+                Slog.w(TAG, "Error writing config file", e);
+                mAppsConfigFile.failWrite(stream);
+            }
+        }
+    }
+
+    void writeConfigFileLocked(XmlSerializer out) throws IOException {
+        out.startDocument(null, true);
+        out.startTag(null, "config");
+        for (int i=0; i<mApplicationProfiles.size(); i++) {
+            ApplicationProfileInfo info = mApplicationProfiles.valueAt(i);
+            out.startTag(null, "app");
+                out.attribute(null, "pn",info.packageName);
+                out.attribute(null, "pp",info.perfProfile);
+                out.attribute(null, "tp",info.thermProfile);
+                out.attribute(null, "rs",Boolean.toString(info.isRestricted));
+                out.attribute(null, "pr",Integer.toString(info.priority));
+            out.endTag(null, "app");
+        }
+        out.endTag(null, "config");
+        out.endDocument();
+    }
 
 
     private void toggleTorch(boolean on) {
@@ -1627,4 +2079,142 @@ public class BaikalService extends SystemService {
             super("baikal.handler", android.os.Process.THREAD_PRIORITY_FOREGROUND);
         }
     }
+
+
+    BinderService mBinderService;
+
+    private final class BinderService extends IBaikalServiceController.Stub {
+
+        @Override public String getAppPerfProfile(String packageName) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getAppPerfProfileInternal(packageName);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+        @Override public String getAppThermProfile(String packageName) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getAppThermProfileInternal(packageName);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+        @Override public void setAppPerfProfile(String packageName, String profile) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setAppPerfProfileInternal(packageName,profile);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setAppThermProfile(String packageName, String profile) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setAppThermProfileInternal(packageName,profile);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+        @Override public boolean isAppRestrictedProfile(String packageName) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return isAppRestrictedProfileInternal(packageName);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setAppRestrictedProfile(String packageName, boolean restricted) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setAppRestrictedProfile(packageName,restricted);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public int getAppPriority(String packageName) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getAppPriorityInternal(packageName);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setAppPriority(String packageName, int priority) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setAppPriorityInternal(packageName,priority);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public String getDefaultPerfProfile() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getDefaultPerfProfileInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+        @Override public void setDefaultPerfProfile(String profile) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setDefaultPerfProfileInternal(profile);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public String getDefaultThermProfile() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getDefaultThermProfileInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setDefaultThermProfile(String profile) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setDefaultThermProfileInternal(profile);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+    }
+
+    class ApplicationProfileInfo {
+        public String packageName;
+        public String perfProfile;
+        public String thermProfile;
+        public boolean isRestricted;
+        public int priority; 
+
+        public ApplicationProfileInfo() {
+            perfProfile = "default";
+            thermProfile = "default";
+        }
+
+        @Override
+        public String toString() {
+            String ret = "packageName=" + packageName +
+            ", perfProfile=" + perfProfile +
+            ", thermProfile=" + thermProfile +
+            ", isRestricted=" + isRestricted +
+            ", priority=" + priority;
+            return ret;
+        }
+    }
+
+    private static File getSystemDir() {
+        return new File(Environment.getDataDirectory(), "system");
+    }
+
 }

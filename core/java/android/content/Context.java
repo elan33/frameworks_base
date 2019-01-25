@@ -4219,6 +4219,14 @@ public abstract class Context {
     public static final String SECURE_ELEMENT_SERVICE = "secure_element";
 
     /**
+     * System service name for the BaikalService.
+     * @see #getSystemService(String)
+     * @hide
+     */
+    public static final String BAIKAL_SERVICE_CONTROLLER = "baikalservice";
+
+
+    /**
      * Determine whether the given permission is allowed for a particular
      * process and user ID running in the system.
      *
