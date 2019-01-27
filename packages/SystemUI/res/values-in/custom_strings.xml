@@ -20,7 +20,23 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">Caffeine</string>
+    <string name="accessibility_quick_settings_caffeine_off">Caffeine nonaktif</string>
+    <string name="accessibility_quick_settings_caffeine_on">Caffeine aktif</string>
     <!-- AOD QS tile -->
+    <string name="quick_settings_aod_label">AOD</string>
+    <string name="lockscreen_default">Default</string>
+    <string name="lockscreen_hidden">Tidak ada</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="custom_hint">Geser dari ikon untuk membuka</string>
+    <string name="global_action_reboot">Reboot</string>
+    <string name="global_action_reboot_more">Reboot</string>
+    <string name="global_action_reboot_sub">Sistem</string>
+    <string name="global_action_reboot_recovery">Recovery</string>
+    <string name="global_action_reboot_bootloader">Bootloader</string>
     <!-- ADB over network tile -->
+    <string name="quick_settings_network_adb_enabled_label">Diaktifkan</string>
+    <string name="quick_settings_network_adb_disabled_label">Dinonaktifkan</string>
+    <string name="quick_settings_network_adb_label">ADB melalui jaringan</string>
+    <string name="quick_settings_network_adb_toast">USB debugging tidak diaktifkan</string>
 </resources>

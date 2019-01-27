@@ -16,6 +16,10 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="reboot_title">Reboot</string>
+    <string name="reboot_message">Memulai ulang sistem</string>
     <!-- MicroG -->
+    <string name="permlab_fakePackageSignature">Spoof package signature (MicroG)</string>
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_fakePackageSignature">Izinkan app untuk menyamar menjadi app lain. Aplikasi jahat mungkin dapat menggunakan ini untuk mengakses data privasi aplikasi. Bolehkan perizinan ini dengan hati-hati!</string>
 </resources>

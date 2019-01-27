@@ -26,6 +26,7 @@
     <!-- AOD QS tile -->
     <string name="quick_settings_aod_label">Always-On-Display</string>
     <string name="lockscreen_default">Standard</string>
+    <string name="lockscreen_hidden">Keine Aktion</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
     <string name="custom_hint">Zum Öffnen vom Symbol wischen</string>
     <string name="global_action_reboot">Neustarten</string>

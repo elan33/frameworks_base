@@ -16,7 +16,15 @@
     <string name="accessibility_quick_settings_usb_tether_off">USB Tethering AUS</string>
     <string name="accessibility_quick_settings_usb_tether_on">USB-Tethering an</string>
     <string name="accessibility_quick_settings_usb_tether_changed_off">USB-Tethering ausgeschaltet</string>
+    <string name="accessibility_quick_settings_usb_tether_changed_on">USB-Tethering eingeschaltet</string>
+    <string name="quick_settings_usb_tether_label">USB-Tethering</string>
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">Koffein</string>
+    <string name="accessibility_quick_settings_caffeine_off">Koffein aus</string>
+    <string name="accessibility_quick_settings_caffeine_on">Koffein AN</string>
     <!-- Partial screenshot -->
+    <string name="screenshot_abort_title">Kein Bildschirmfoto gemacht</string>
+    <string name="screenshot_abort_text">Vorgang abgebrochen.</string>
     <!-- Screenrecord -->
+    <string name="quick_settings_screenrecord_label">Bildschirmaufnahme</string>
 </resources>

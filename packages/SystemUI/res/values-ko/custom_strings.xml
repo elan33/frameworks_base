@@ -20,7 +20,23 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">카페인</string>
+    <string name="accessibility_quick_settings_caffeine_off">카페인 꺼짐</string>
+    <string name="accessibility_quick_settings_caffeine_on">카페인 켜짐</string>
     <!-- AOD QS tile -->
+    <string name="quick_settings_aod_label">AOD</string>
+    <string name="lockscreen_default">기본값</string>
+    <string name="lockscreen_hidden">없음</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="custom_hint">실행하려면 아이콘을 미세요</string>
+    <string name="global_action_reboot">재시작</string>
+    <string name="global_action_reboot_more">재시작\u2026</string>
+    <string name="global_action_reboot_sub">시스템</string>
+    <string name="global_action_reboot_recovery">복구 모드</string>
+    <string name="global_action_reboot_bootloader">부트로더</string>
     <!-- ADB over network tile -->
+    <string name="quick_settings_network_adb_enabled_label">활성화됨</string>
+    <string name="quick_settings_network_adb_disabled_label">비활성화됨</string>
+    <string name="quick_settings_network_adb_label">무선 네트워크로 ADB 사용</string>
+    <string name="quick_settings_network_adb_toast">USB 디버깅이 허용되지 않음</string>
 </resources>

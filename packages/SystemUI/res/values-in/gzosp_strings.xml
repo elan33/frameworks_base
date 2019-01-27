@@ -17,7 +17,45 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Power menu advanced restart -->
+    <string name="global_action_restart_system">Reboot</string>
+    <string name="global_action_restart_advanced">Advanced</string>
+    <string name="global_action_restart_recovery">Recovery</string>
+    <string name="global_action_restart_bootloader">Bootloader</string>
+    <string name="global_action_restart_ui">SystemUI</string>
     <!-- Indication on the keyguard that is shown when the device is charging with a dash charger. Should match keyguard_plugged_in_dash_charging [CHAR LIMIT=40]-->
+    <string name="keyguard_indication_dash_charging_time">Dash Charging (<xliff:g id="charging_time_left" example="4 hours and 2 minutes">%s</xliff:g> until full)</string>
+    <string name="keyguard_plugged_in_dash_charging">Dash Charging</string>
     <!-- Tuner -->
+    <string name="preview">Preview</string>
+    <string name="keycode">KeyCode</string>
+    <string name="no_home_title">Tombol beranda tidak ditemukan</string>
+    <string name="no_home_message">Tombol beranda dibutuhkan untuk navigasi perangkat ini. Harap tambahkan tombol beranda sebelum menyimpan.</string>
+    <string name="clipboard_description">Clipboard memungkinkan item diseret langsung ke clipboard. Item juga dapat diseret langsung dari clipboard ketika tersedia.</string>
+    <string name="keycode_description">Tombol Keycode memungkinan tombol keyboard untuk ditambahkan di Panel Navigasi. Ketika ditekan akan meniru tombol keyboard yang dipilih. Pertama pilih tombol, lalu diikuti oleh gambar untuk ditampilkan pada tombol.</string>
+    <string name="start">Awal</string>
+    <string name="center">Tengah</string>
+    <string name="end">Akhir</string>
+    <string name="space">Jarak</string>
+    <string name="menu_ime">Menu / Pengalih Keyboard</string>
+    <string name="select_button">Pilih tombol untuk ditambahkan</string>
+    <string name="add_button">Tambahkan tombol</string>
+    <string name="save">Simpan</string>
+    <string name="reset">Reset</string>
+    <string name="select_keycode">Pilih tombol Keyboard</string>
+    <string name="left">Kiri</string>
+    <string name="right">Kanan</string>
+    <string name="navbar_editor_title">Editor</string>
+    <string name="navbar_editor_summary">Konfigurasi Panel Navigasi</string>
+    <string name="lockscreen_default">Default</string>
+    <string name="lockscreen_hidden">Tidak ada</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="custom_hint">Geser dari ikon untuk membuka</string>
+    <string name="status_bar_vpn">VPN</string>
+    <string name="quick_settings_roaming_title">Indikator Roaming</string>
+    <string name="tuner_quick_settings">Quick Settings</string>
+    <string name="tuner_show_brightness_new">Tampilkan panel kecerahan</string>
+    <string name="tuner_brightness_position_bottom">Slider kecerahan di bawah</string>
+    <string name="tuner_show_info_header_title">Tampilkan informasi header</string>
+    <string name="tuner_cellular_title">Seluler</string>
+    <string name="tuner_show_secure_title">Tampilkan keamanan footer</string>
 </resources>

@@ -30,6 +30,7 @@
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
     <string name="custom_hint">Scorri dall\'icona per avviare</string>
     <string name="global_action_reboot">Riavvia</string>
+    <string name="global_action_reboot_more">Riavvio</string>
     <string name="global_action_reboot_sub">Sistema</string>
     <string name="global_action_reboot_recovery">Recovery</string>
     <string name="global_action_reboot_bootloader">Bootloader</string>
