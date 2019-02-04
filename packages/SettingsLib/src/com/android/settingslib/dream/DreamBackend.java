@@ -97,7 +97,7 @@ public class DreamBackend {
     }
 
     public DreamBackend(Context context) {
-        mContext = context.getApplicationContext();
+        mContext = context; //.getApplicationContext();
         mDreamManager = IDreamManager.Stub.asInterface(
                 ServiceManager.getService(DreamService.DREAM_SERVICE));
         mComparator = new DreamInfoComparator(getDefaultDream());
