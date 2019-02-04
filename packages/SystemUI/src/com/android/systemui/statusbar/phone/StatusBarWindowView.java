@@ -32,9 +32,11 @@ import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.session.MediaSessionLegacyHelper;
 import android.net.Uri;
+import android.os.UserHandle;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.AttributeSet;
 import android.view.ActionMode;
 import android.view.DisplayCutout;
@@ -53,6 +55,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
 import android.widget.FrameLayout;
+import android.provider.Settings;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.view.FloatingActionMode;
@@ -807,5 +810,13 @@ public class StatusBarWindowView extends FrameLayout {
         }
     };
 
+    public void setStatusDoubleTapToSleep() {
+        boolean doubleTapToSleepEnabled = Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.DOUBLE_TAP_SLEEP_GESTURE, 0, UserHandle.USER_CURRENT) == 1;
+        Log.d(TAG, "doubleTapToSleepEnabled=" + doubleTapToSleepEnabled);
+        if (mNotificationPanel != null) {
+            mNotificationPanel.updateDoubleTapToSleep(doubleTapToSleepEnabled);
+        }
+    }
 }
 

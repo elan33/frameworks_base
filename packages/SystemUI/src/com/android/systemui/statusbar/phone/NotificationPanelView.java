@@ -41,6 +41,7 @@ import android.util.AttributeSet;
 import android.util.FloatProperty;
 import android.util.Log;
 import android.util.MathUtils;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -50,6 +51,9 @@ import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
+
+import android.os.UserHandle;
+import android.provider.Settings;
 
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
@@ -79,6 +83,8 @@ import com.android.systemui.statusbar.stack.AnimationProperties;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
 import com.android.systemui.statusbar.stack.StackStateAnimator;
 
+import com.android.internal.util.baikalos.BaikalOSUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -89,6 +95,7 @@ public class NotificationPanelView extends PanelView implements
         KeyguardAffordanceHelper.Callback, NotificationStackScrollLayout.OnEmptySpaceClickListener,
         OnHeadsUpChangedListener, QS.HeightListener {
 
+    public static final String TAG = "NotificationPanelView";
     private static final boolean DEBUG = false;
 
     // Cap and total height of Roboto font. Needs to be adjusted when font for the big clock is
@@ -296,6 +303,9 @@ public class NotificationPanelView extends PanelView implements
             .setAnimationFinishListener(mAnimatorListenerAdapter)
             .setCustomInterpolator(PANEL_ALPHA.getProperty(), Interpolators.ALPHA_IN);
 
+    private GestureDetector mDoubleTapToSleepGesture;
+    private int mStatusBarHeaderHeight;
+
     public NotificationPanelView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setWillNotDraw(!DEBUG);
@@ -305,6 +315,15 @@ public class NotificationPanelView extends PanelView implements
         setAccessibilityPaneTitle(determineAccessibilityPaneTitle());
         mAlphaPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.MULTIPLY));
         setPanelAlpha(255, false /* animate */);
+
+         mDoubleTapToSleepGesture = new GestureDetector(context,
+                new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                BaikalOSUtils.goToSleep(context);
+                return true;
+            }
+        });
     }
 
     public void setStatusBar(StatusBar bar) {
@@ -366,6 +385,8 @@ public class NotificationPanelView extends PanelView implements
                 R.dimen.keyguard_indication_bottom_padding);
         mQsNotificationTopPadding = getResources().getDimensionPixelSize(
                 R.dimen.qs_notification_padding);
+        mStatusBarHeaderHeight = getResources().getDimensionPixelSize(
+                R.dimen.status_bar_height);
     }
 
     public void updateResources() {
@@ -877,6 +898,15 @@ public class NotificationPanelView extends PanelView implements
     public boolean onTouchEvent(MotionEvent event) {
         if (mBlockTouches || (mQs != null && mQs.isCustomizing())) {
             return false;
+        }
+        final int h = getMeasuredHeight();
+        if ((mDoubleTapToSleepEnabled
+                && mStatusBarState == StatusBarState.KEYGUARD
+                && (event.getY() < (h / 3) ||
+                event.getY() > (h - mStatusBarHeaderHeight * 5))) ||
+                (!mQsExpanded && mDoubleTapToSleepEnabled
+                && event.getY() < mStatusBarHeaderHeight)) {
+            mDoubleTapToSleepGesture.onTouchEvent(event);
         }
         initDownStates(event);
         if (mListenForHeadsUp && !mHeadsUpTouchHelper.isTrackingHeadsUp()
@@ -2871,5 +2901,10 @@ public class NotificationPanelView extends PanelView implements
     public void onBouncerPreHideAnimation() {
         setKeyguardStatusViewVisibility(mStatusBarState, true /* keyguardFadingAway */,
                 false /* goingToFullShade */);
+    }
+
+    public void updateDoubleTapToSleep(boolean doubleTapToSleepEnabled) {
+        Log.d(TAG, "doubleTapToSleepEnabled=" + doubleTapToSleepEnabled);
+        mDoubleTapToSleepEnabled = doubleTapToSleepEnabled;
     }
 }

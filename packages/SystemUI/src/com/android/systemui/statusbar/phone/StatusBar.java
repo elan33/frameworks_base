@@ -4840,6 +4840,7 @@ public class StatusBar extends SystemUI implements DemoMode,
 
     @Override
     public void wakeUpIfDozing(long time, View where) {
+        Slog.d(TAG, "wakeUpIfDozing: mDozing=" + mDozing);
         if (mDozing) {
             PowerManager pm = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
             pm.wakeUp(time, "com.android.systemui:NODOZE");
@@ -5324,6 +5325,9 @@ public class StatusBar extends SystemUI implements DemoMode,
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.THEMING_ACCENT),
                     false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.DOUBLE_TAP_SLEEP_GESTURE),
+                    false, this, UserHandle.USER_ALL);
             update();
         }
         @Override
@@ -5338,12 +5342,15 @@ public class StatusBar extends SystemUI implements DemoMode,
                     uri.equals(Settings.System.getUriFor(Settings.System.THEMING_ACCENT))) {
                 ThemeOverlayHelper.updateOverlays(mContext, mOverlayManager,
                         mLockscreenUserManager.getCurrentUserId());
+            } else if (uri.equals(Settings.System.getUriFor(Settings.System.DOUBLE_TAP_SLEEP_GESTURE))) {
+                setStatusDoubleTapToSleep();
             }
         }
 
         public void update() {
             updateTickerAnimation();
             updateTickerTickDuration();
+            setStatusDoubleTapToSleep();
         }
     }
 
@@ -5360,6 +5367,12 @@ public class StatusBar extends SystemUI implements DemoMode,
                 Settings.System.STATUS_BAR_TICKER_TICK_DURATION, 3000, UserHandle.USER_CURRENT);
         if (mTicker != null) {
             mTicker.updateTickDuration(mTickerTickDuration);
+        }
+    }
+
+    private void setStatusDoubleTapToSleep() {
+        if (mStatusBarWindow != null) {
+            mStatusBarWindow.setStatusDoubleTapToSleep();
         }
     }
 
