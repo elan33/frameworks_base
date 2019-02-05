@@ -16,6 +16,9 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="reboot_title">Рестартиране</string>
+    <string name="reboot_message">Рестартиране на системата</string>
     <!-- MicroG -->
     <!-- Description of an application permission, listed so the user can choose whether they want to allow the application to do this. -->
+    <string name="permdesc_fakePackageSignature">Позволява на приложението да се представи като друго. Вредни приложения може да използват това, за да получат достъп до лична информация от приложения. Законните употреби включват емулатор, претендиращ да бъде каквото емулира. Дайте това разрешение само с повишено внимание!</string>
 </resources>

@@ -20,7 +20,19 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">Кофеин</string>
+    <string name="accessibility_quick_settings_caffeine_off">Кофеин изкл.</string>
+    <string name="accessibility_quick_settings_caffeine_on">Кофеин вкл.</string>
     <!-- AOD QS tile -->
+    <string name="quick_settings_aod_label">Винаги на дисплея</string>
+    <string name="lockscreen_default">По подразбиране</string>
+    <string name="lockscreen_hidden">Нищо</string>
     <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="global_action_reboot">Рестарт</string>
+    <string name="global_action_reboot_sub">Система</string>
+    <string name="global_action_reboot_recovery">Възстановяване</string>
+    <string name="global_action_reboot_bootloader">Зареждачка за Ос</string>
     <!-- ADB over network tile -->
+    <string name="quick_settings_network_adb_enabled_label">Включено</string>
+    <string name="quick_settings_network_adb_disabled_label">Изключено</string>
 </resources>

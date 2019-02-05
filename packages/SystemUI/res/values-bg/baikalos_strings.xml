@@ -4,8 +4,15 @@
     <!-- Heads up QS tile -->
     <!-- BaikalOS Extras Tile -->
     <!-- Screenshoot tile -->
+    <string name="quick_settings_screenshot_label">Снимка на екрана</string>
     <!-- USB Tethering tile -->
     <!-- Caffeine tile -->
+    <string name="quick_settings_caffeine_label">Кофеин</string>
+    <string name="accessibility_quick_settings_caffeine_off">Кофеин изключен</string>
+    <string name="accessibility_quick_settings_caffeine_on">Кофеин включен</string>
     <!-- Partial screenshot -->
+    <string name="screenshot_abort_title">Не е направена снимка на екрана</string>
+    <string name="screenshot_abort_text">Операцията е прекратена.</string>
     <!-- Screenrecord -->
+    <string name="quick_settings_screenrecord_label">Запис на екрана</string>
 </resources>
