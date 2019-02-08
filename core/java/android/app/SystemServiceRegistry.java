@@ -1025,11 +1025,11 @@ final class SystemServiceRegistry {
      */
     public static Object getSystemService(ContextImpl ctx, String name) {
         ServiceFetcher<?> fetcher = SYSTEM_SERVICE_FETCHERS.get(name);
-        if( fetcher == null ) {
-            Log.w(TAG, "getService(" + name + ") fetcher=null");
-        } else {
-            Log.w(TAG, "getService(" + name + ") service=" + fetcher.getService(ctx));
-        }
+        //if( fetcher == null ) {
+        //    Log.w(TAG, "getService(" + name + ") fetcher=null");
+        //} else {
+        //    Log.w(TAG, "getService(" + name + ") service=" + fetcher.getService(ctx));
+        //}
         return fetcher != null ? fetcher.getService(ctx) : null;
     }
 
@@ -1037,7 +1037,7 @@ final class SystemServiceRegistry {
      * Gets the name of the system-level service that is represented by the specified class.
      */
     public static String getSystemServiceName(Class<?> serviceClass) {
-        Log.w(TAG, "getSystemServiceName()=" + SYSTEM_SERVICE_NAMES.get(serviceClass));
+        //Log.w(TAG, "getSystemServiceName()=" + SYSTEM_SERVICE_NAMES.get(serviceClass));
         return SYSTEM_SERVICE_NAMES.get(serviceClass);
     }
 
