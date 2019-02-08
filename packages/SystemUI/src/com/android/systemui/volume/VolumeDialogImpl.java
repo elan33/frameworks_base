@@ -248,15 +248,13 @@ public class VolumeDialogImpl implements VolumeDialog {
             addRow(AudioManager.STREAM_MUSIC,
                     R.drawable.ic_volume_media, R.drawable.ic_volume_media_mute, true, true);
             if (!AudioSystem.isSingleVolume(mContext)) {
-                if (Util.isVoiceCapable(mContext)) {
+                //if (Util.isVoiceCapable(mContext)) {
                     addRow(AudioManager.STREAM_RING, R.drawable.ic_volume_ringer,
                             R.drawable.ic_volume_ringer_mute, true, false);
-                } else {
-                    addRow(AudioManager.STREAM_RING, R.drawable.ic_volume_notification,
+                //} else {
+                    addRow(AudioManager.STREAM_NOTIFICATION, R.drawable.ic_volume_notification,
                             R.drawable.ic_volume_notification_mute, true, false);
-                }
-                addRow(AudioManager.STREAM_RING,
-                        R.drawable.ic_volume_ringer, R.drawable.ic_volume_ringer_mute, true, false);
+                //}
                 addRow(STREAM_ALARM,
                         R.drawable.ic_volume_alarm, R.drawable.ic_volume_alarm_mute, true, false);
                 addRow(AudioManager.STREAM_VOICE_CALL,
@@ -598,10 +596,17 @@ public class VolumeDialogImpl implements VolumeDialog {
     }
 
     private boolean shouldBeVisibleH(VolumeRow row, VolumeRow activeRow) {
-        boolean isActive = row.stream == activeRow.stream;
-        if (row.stream == AudioSystem.STREAM_ACCESSIBILITY) {
-            return mShowA11yStream;
+
+        if (row.stream == AudioManager.STREAM_MUSIC ||
+            row.stream == AudioManager.STREAM_RING ||
+            row.stream == AudioManager.STREAM_NOTIFICATION ) {
+            return true;
         }
+
+        boolean isActive = row.stream == activeRow.stream;
+        //if (row.stream == AudioSystem.STREAM_ACCESSIBILITY) {
+        //    return mShowA11yStream;
+        //}
 
         // if the active row is accessibility, then continue to display previous
         // active row since accessibility is displayed under it
