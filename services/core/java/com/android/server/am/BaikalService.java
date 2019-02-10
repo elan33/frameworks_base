@@ -1444,11 +1444,36 @@ public class BaikalService extends SystemService {
     }
 
 
+    int currentUid=-1, currentWakefulness=-1;
     public void topAppChanged(ActivityRecord act) {
         if( act == null ) {
             Slog.i(TAG,"topAppChanged: empty top activity");
-            setPerformanceProfile("default");
-            setThermalProfile("default");
+            if( currentWakefulness != 0 ) {
+                setPerformanceProfile("default");
+                setThermalProfile("default");
+            }
+            currentUid = -1;
+            return;
+        }
+
+        String pkg;
+        int uid;
+        if (act != null) {
+            pkg = act.packageName;
+            uid = act.info.applicationInfo.uid;
+        } else {
+            pkg = null;
+            uid = -1;
+        }
+
+
+        if( currentUid == uid && currentWakefulness == getWakefulnessLocked() ) {
+            return;
+        }
+
+        currentUid = uid;    
+        currentWakefulness = getWakefulnessLocked();
+        if( currentWakefulness == 0 ) {
             return;
         }
 

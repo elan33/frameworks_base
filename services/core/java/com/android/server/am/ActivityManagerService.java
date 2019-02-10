@@ -24981,6 +24981,11 @@ public class ActivityManagerService extends IActivityManager.Stub
             pkg = null;
             uid = -1;
         }
+
+        if( mBaikalService != null ) {
+            mBaikalService.topAppChanged(act);
+        }
+
         // Has the UID or resumed package name changed?
         if (uid != mCurResumedUid || (pkg != mCurResumedPackage
                 && (pkg == null || !pkg.equals(mCurResumedPackage)))) {
@@ -24993,9 +24998,6 @@ public class ActivityManagerService extends IActivityManager.Stub
             if (mCurResumedPackage != null) {
                 mBatteryStatsService.noteEvent(BatteryStats.HistoryItem.EVENT_TOP_START,
                         mCurResumedPackage, mCurResumedUid);
-                if( mBaikalService != null ) {
-                    mBaikalService.topAppChanged(act);
-                }
 
             }
         }
