@@ -54,6 +54,7 @@ import android.util.MathUtils;
 import android.util.Slog;
 import android.util.TimeUtils;
 import android.view.Display;
+import com.android.server.am.BaikalService;
 
 import java.io.PrintWriter;
 
@@ -371,6 +372,8 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
     static final int SCREEN_OFF_CRT = 1;
     static final int SCREEN_OFF_SCALE = 2;
 
+    private BaikalService mBaikalService;
+
     /**
      * Creates the display power controller.
      */
@@ -649,6 +652,8 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
                 SCREEN_OFF_FADE, UserHandle.USER_CURRENT);
 
         mPowerState = new DisplayPowerState(mBlanker, mScreenOffAnimation);
+
+        mBaikalService = LocalServices.getService(BaikalService.class);
 
         if (mColorFadeEnabled) {
             mColorFadeOnAnimator = ObjectAnimator.ofFloat(
@@ -956,9 +961,19 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
             mAppliedDimming = false;
         }
 
+
+        boolean readerMode = false;
+        if( mBaikalService != null ) {
+            readerMode = mBaikalService.isReaderMode();
+            if( readerMode ) {
+                final int readerBrightness = (int) (brightness * 0.5);
+                brightness = Math.max(readerBrightness, mScreenBrightnessRangeMinimum);
+            }
+        }
+
         // If low power mode is enabled, scale brightness by screenLowPowerBrightnessFactor
         // as long as it is above the minimum threshold.
-        if (mPowerRequest.lowPowerMode) {
+        if (mPowerRequest.lowPowerMode && !readerMode) {
             if (brightness > mScreenBrightnessRangeMinimum) {
                 final float brightnessFactor =
                         Math.min(mPowerRequest.screenLowPowerBrightnessFactor, 1);

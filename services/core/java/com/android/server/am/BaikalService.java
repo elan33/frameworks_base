@@ -1350,7 +1350,7 @@ public class BaikalService extends SystemService {
 
 
     public boolean isReaderModeLocked() {
-        return false; //mIsReaderModeActive;
+        return mIsReaderModeActive;
     }
 
     public boolean isDeviceIdleModeLocked() {
