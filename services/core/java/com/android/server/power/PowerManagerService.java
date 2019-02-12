@@ -139,6 +139,9 @@ public final class PowerManagerService extends SystemService
 
     private static final int MSG_WAKE_UP = 5;
 
+    private static final int MSG_UPDATE_POWERSTATE = 8;
+
+
     // Dirty bit: mWakeLocks changed
     protected static final int DIRTY_WAKE_LOCKS = 1 << 0;
     // Dirty bit: mWakefulness changed
@@ -2818,6 +2821,7 @@ public final class PowerManagerService extends SystemService
 
 
     boolean mReaderModeActive = false;
+    long lastInteractiveHint = 0;
     /**
      * Return true if we must keep a suspend blocker active on behalf of the display.
      * We do so if the screen is on or is in transition between states.
@@ -2835,7 +2839,11 @@ public final class PowerManagerService extends SystemService
                     mReaderModeActive = readerModeActive;
                 }
                 if( readerModeActive ) {   
-                    return false;
+                    if( SystemClock.elapsedRealtime() - lastInteractiveHint > 500 ) {
+                        return false;
+                    } else {
+                        Slog.d(TAG, "ReaderMode blocked by user activity");
+                    }
                 }
             }
             // If we asked for the screen to be on but it is off due to the proximity
@@ -2853,6 +2861,22 @@ public final class PowerManagerService extends SystemService
         // Let the system suspend if the screen is off or dozing.
         return false;
     }
+
+    private void handleUpdatePowerState() {
+        synchronized (mLock) {
+            mHandler.removeMessages(MSG_UPDATE_POWERSTATE);
+            updateSuspendBlockerLocked();
+        }
+    }
+
+    private void scheduleUpdatePowerState() {
+        mHandler.removeMessages(MSG_UPDATE_POWERSTATE);
+        Message msg = mHandler.obtainMessage(MSG_UPDATE_POWERSTATE);
+        msg.setAsynchronous(true);
+        mHandler.sendMessageDelayed(msg, 550);
+    }
+
+
 
     private void setHalAutoSuspendModeLocked(boolean enable) {
         if (enable != mHalAutoSuspendModeEnabled) {
@@ -3378,7 +3402,13 @@ public final class PowerManagerService extends SystemService
 
     private void powerHintInternal(int hintId, int data) {
         // Maybe filter the event.
+
+        Slog.d(TAG, "PowerHint:" + hintId + ", data=" + data );
         switch (hintId) {
+            case 2:
+                lastInteractiveHint = SystemClock.elapsedRealtime();
+                scheduleUpdatePowerState();
+                break;
             case PowerHint.LAUNCH: // 1: activate launch boost 0: deactivate.
                 if (data == 1 && mBatterySaverController.isLaunchBoostDisabled()) {
                     return;
@@ -4096,6 +4126,9 @@ public final class PowerManagerService extends SystemService
                 case MSG_WAKE_UP:
                     cleanupProximity();
                     ((Runnable) msg.obj).run();
+                    break;
+                case MSG_UPDATE_POWERSTATE:
+                    handleUpdatePowerState();
                     break;
             }
         }
