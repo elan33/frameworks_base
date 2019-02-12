@@ -167,7 +167,7 @@ public class BaikalService extends SystemService {
 
     private boolean mDeviceIdleMode;
     private boolean mLightDeviceIdleMode;
-    private int mWakefulness;
+    private int mWakefulness = 1;
     private int mWakefulnessReason;
     private String mLastWakeupReason;
     private String mLastSleepReason;
