@@ -554,10 +554,10 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
      */
     public boolean requestPowerState(DisplayPowerRequest request,
             boolean waitForNegativeProximity) {
-        if (DEBUG) {
+        //if (DEBUG) {
             Slog.d(TAG, "requestPowerState: "
                     + request + ", waitForNegativeProximity=" + waitForNegativeProximity);
-        }
+        //}
 
         synchronized (mLock) {
             boolean changed = false;
@@ -962,18 +962,21 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
         }
 
 
+/*
         boolean readerMode = false;
         if( mBaikalService != null ) {
             readerMode = mBaikalService.isReaderMode();
             if( readerMode ) {
                 final int readerBrightness = (int) (brightness * 0.5);
                 brightness = Math.max(readerBrightness, mScreenBrightnessRangeMinimum);
+                Slog.i(TAG, "ReaderMode: brightness" + brightness);
             }
         }
 
+*/
         // If low power mode is enabled, scale brightness by screenLowPowerBrightnessFactor
         // as long as it is above the minimum threshold.
-        if (mPowerRequest.lowPowerMode && !readerMode) {
+        if (mPowerRequest.lowPowerMode) {
             if (brightness > mScreenBrightnessRangeMinimum) {
                 final float brightnessFactor =
                         Math.min(mPowerRequest.screenLowPowerBrightnessFactor, 1);

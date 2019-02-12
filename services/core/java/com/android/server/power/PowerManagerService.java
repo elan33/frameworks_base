@@ -167,6 +167,8 @@ public final class PowerManagerService extends SystemService
     private static final int DIRTY_QUIESCENT = 1 << 12;
     // Dirty bit: VR Mode enabled changed
     private static final int DIRTY_VR_MODE_CHANGED = 1 << 13;
+    // Dirty bit: Reader Mode enabled changed
+    private static final int DIRTY_READER_MODE_CHANGED = 1 << 14;
 
     // Summarizes the state of all active wakelocks.
     private static final int WAKE_LOCK_CPU = 1 << 0;
@@ -2519,7 +2521,7 @@ public final class PowerManagerService extends SystemService
         if ((dirty & (DIRTY_WAKE_LOCKS | DIRTY_USER_ACTIVITY | DIRTY_WAKEFULNESS
                 | DIRTY_ACTUAL_DISPLAY_POWER_STATE_UPDATED | DIRTY_BOOT_COMPLETED
                 | DIRTY_SETTINGS | DIRTY_SCREEN_BRIGHTNESS_BOOST | DIRTY_VR_MODE_CHANGED |
-                DIRTY_QUIESCENT)) != 0) {
+                DIRTY_QUIESCENT | DIRTY_READER_MODE_CHANGED)) != 0) {
 
 
             DisplayPowerRequest mPrevDisplayPowerRequest = mDisplayPowerRequest;
@@ -2550,6 +2552,10 @@ public final class PowerManagerService extends SystemService
             mDisplayPowerRequest.boostScreenBrightness = shouldBoostScreenBrightness();
 
             updatePowerRequestFromBatterySaverPolicy(mDisplayPowerRequest);
+
+            if( !mDisplayPowerRequest.lowPowerMode ) {
+                mDisplayPowerRequest.lowPowerMode = mReaderModeActive;
+            }
 
             if (mDisplayPowerRequest.policy == DisplayPowerRequest.POLICY_DOZE) {
                 mDisplayPowerRequest.dozeScreenState = mDozeScreenStateOverrideFromDreamManager;
@@ -2810,6 +2816,8 @@ public final class PowerManagerService extends SystemService
         }
     }
 
+
+    boolean mReaderModeActive = false;
     /**
      * Return true if we must keep a suspend blocker active on behalf of the display.
      * We do so if the screen is on or is in transition between states.
@@ -2820,7 +2828,13 @@ public final class PowerManagerService extends SystemService
         }
         if (mDisplayPowerRequest.isBrightOrDim()) {
             if( mBaikalService != null ) {
-                if( mBaikalService.isReaderMode() ) {   
+                boolean readerModeActive = mBaikalService.isReaderMode();
+                if( mReaderModeActive != readerModeActive ) {
+                    Slog.d(TAG, "ReaderMode changed to " + readerModeActive);
+                    updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
+                    mReaderModeActive = readerModeActive;
+                }
+                if( readerModeActive ) {   
                     return false;
                 }
             }
