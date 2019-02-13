@@ -94,7 +94,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
 
             if (shouldHide(rxData, txData, timeDelta)) {
                 setText("");
-                setVisibility(View.GONE);
                 mTrafficVisible = false;
             } else {
                 // Get information for uplink ready so the line return can be added
@@ -109,7 +108,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
                     setTextSize(TypedValue.COMPLEX_UNIT_PX, (float)txtSize);
                     setText(output);
                 }
-                setVisibility(View.VISIBLE);
                 mTrafficVisible = true;
             }
             updateVisibility();
@@ -259,7 +257,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
         } else {
             clearHandlerCallbacks();
         }
-        setVisibility(View.GONE);
     }
 
     private void setMode() {
