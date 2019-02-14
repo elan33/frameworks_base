@@ -4010,7 +4010,10 @@ public class NotificationStackScrollLayout extends ViewGroup
         if (!onKeyguard()) {
             x += getTranslationX();
         }
-        setTranslationX(x);
+        //setTranslationX(x);
+
+        Log.e(TAG, "setsetTranslationX=" + x + ", getTranslationX=" + getTranslationX());
+
     }
 
     public void setVerticalPanelTranslation(float verticalPanelTranslation) {
