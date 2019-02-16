@@ -188,7 +188,11 @@ public class SeekBarVolumizer implements OnSeekBarChangeListener, Handler.Callba
     }
 
     private boolean isSeekBarEnabled() {
-        return !(mStreamType == AudioManager.STREAM_NOTIFICATION && isNotificationStreamLinked());
+        if( mStreamType != AudioManager.STREAM_NOTIFICATION ) return true;
+        if( isNotificationStreamLinked() ) return false;
+        if( mRingerMode == AudioManager.RINGER_MODE_NORMAL ) return true;
+        return false;
+        //return (!(mStreamType == AudioManager.STREAM_NOTIFICATION && isNotificationStreamLinked()) && mRingerMode != AudioManager.RINGER_MODE_VIBRATE );
     }
 
     @Override
