@@ -554,10 +554,10 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
      */
     public boolean requestPowerState(DisplayPowerRequest request,
             boolean waitForNegativeProximity) {
-        //if (DEBUG) {
+        if (DEBUG) {
             Slog.d(TAG, "requestPowerState: "
                     + request + ", waitForNegativeProximity=" + waitForNegativeProximity);
-        //}
+        }
 
         synchronized (mLock) {
             boolean changed = false;

@@ -1137,7 +1137,9 @@ public class BaikalService extends SystemService {
                 a.whenElapsed = whenElapsed;
                 a.maxWhenElapsed = whenElapsed;
                 a.origWhen = a.when;
-                Slog.i(TAG,"AdjustAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+                if( DEBUG ) {
+                    Slog.i(TAG,"AdjustAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+                }
                 return true;
             } else {
                 mQtiBiometricsInitialized = true;
@@ -1148,7 +1150,9 @@ public class BaikalService extends SystemService {
             if( (a.when - now)  < 15*60*1000 ) {
                 a.when = a.whenElapsed = a.maxWhenElapsed = a.origWhen = now + 15*60*1000;
             } 
-            Slog.i(TAG,"AdjustAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            if( DEBUG ) {
+                Slog.i(TAG,"AdjustAlarm: unrestricted:" + a.statsTag + ":" + a.toStringLong());
+            }
             return true;
         }
         return false;
@@ -1184,7 +1188,9 @@ public class BaikalService extends SystemService {
     }
 
     public boolean isBroadcastWhitelisted(BroadcastRecord r, ResolveInfo info) {
-        //Slog.i(TAG,"isBroadcastWhitelisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+        if( DEBUG ) {
+            Slog.i(TAG,"isBroadcastWhitelisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+        }
         String act = r.intent.getAction();
         if( act == null ) return false;
         if( act.contains("com.google.android.c2dm") ) return true;
@@ -1211,7 +1217,9 @@ public class BaikalService extends SystemService {
     }
 
     public boolean isBroadcastBlacklisted(BroadcastRecord r, ResolveInfo info) {
-            //Slog.i(TAG,"isBroadcastBlacklisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+            if( DEBUG ) {
+                Slog.i(TAG,"isBroadcastBlacklisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+            }
             if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn ) {
                 return false; 
             }
@@ -1225,10 +1233,14 @@ public class BaikalService extends SystemService {
     }
 
     public boolean isServiceWhitelisted(ServiceRecord service, int callingUid, int callingPid, String callingPackageName, boolean isStarting) {
-            //Slog.i(TAG,"isServiceWhitelisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
+            if( DEBUG ) {
+                Slog.i(TAG,"isServiceWhitelisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
+            }
             if( !isGmsUid(service.appInfo.uid) ) return false;
             if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn) {
-                //Slog.i(TAG,"GmsService: unrestricted (not idle):" + service.name.getClassName());
+                if( DEBUG ) {
+                    Slog.i(TAG,"GmsService: unrestricted (not idle):" + service.name.getClassName());
+                }
                 return true;
             }
 
@@ -1237,14 +1249,20 @@ public class BaikalService extends SystemService {
                     return false;
                 } 
             }
-            //Slog.i(TAG,"GmsService: unrestricted (wl):" + service.name.getClassName());
+            if( DEBUG ) {
+                Slog.i(TAG,"GmsService: unrestricted (wl):" + service.name.getClassName());
+            }
             return true;
     }
     
     public boolean isServiceBlacklisted(ServiceRecord service, int callingUid, int callingPid, String callingPackageName, boolean isStarting) {
-            //Slog.i(TAG,"isServiceBlacklisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
+            if( DEBUG ) {
+                Slog.i(TAG,"isServiceBlacklisted: from " + callingPackageName + "/" + callingUid + "/" + callingPid + " to " + service.name.getClassName());
+            }
             if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn) {
-                //Slog.i(TAG,"GmsService: unblocked (not idle):" + service.name.getClassName());
+                if( DEBUG ) {
+                    Slog.i(TAG,"GmsService: unblocked (not idle):" + service.name.getClassName());
+                }
                 return false; 
             }
 
@@ -1253,7 +1271,9 @@ public class BaikalService extends SystemService {
             if( mDeviceIdleMode ) {
                 for( String srv:mGoogleServicesIdleBlackListed ) {
                     if( service.name.getClassName().equals(srv) ) {
-                        //Slog.i(TAG,"GmsService: restricted:" + service.name.getClassName());
+                        if( DEBUG ) {
+                            Slog.i(TAG,"GmsService: restricted:" + service.name.getClassName());
+                        }
                         return true;
                     } 
                 }
@@ -1316,7 +1336,9 @@ public class BaikalService extends SystemService {
             stat.deviceIdleMode = mDeviceIdleMode;
         }
 
-        Slog.i(TAG,"noteRestrictionStatistics:" + allowed + ":" + recordName);
+        if( DEBUG ) {
+           Slog.i(TAG,"noteRestrictionStatistics:" + allowed + ":" + recordName);
+        }
     }
 
     public void logRestrictionStatistics() {
@@ -1324,14 +1346,18 @@ public class BaikalService extends SystemService {
             for(int i=0;i<mRestrictionStatistics.size();i++) {
                 RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
                 if( stat.allowed > 0 ) {
-                    Slog.i(TAG,"RestrictionStatistics: allowed :" + stat.getLog() + "; allowed=" + stat.allowed);
+                    if( DEBUG ) {
+                        Slog.i(TAG,"RestrictionStatistics: allowed :" + stat.getLog() + "; allowed=" + stat.allowed);
+                    }
                 }
             }
 
             for(int i=0;i<mRestrictionStatistics.size();i++) {
                 RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
                 if( stat.blocked > 0 ) {
-                    Slog.i(TAG,"RestrictionStatistics: blocked :" + stat.getLog() + "; blocked=" + stat.blocked);
+                    if( DEBUG ) {
+                        Slog.i(TAG,"RestrictionStatistics: blocked :" + stat.getLog() + "; blocked=" + stat.blocked);
+                    }
                 }
             }
         }
@@ -1367,7 +1393,9 @@ public class BaikalService extends SystemService {
 
     public void setDeviceIdleModeLocked(boolean mode) {
         if( mDeviceIdleMode != mode ) {
-            Slog.i(TAG,"setDeviceIdleModeLocked: " + mode);
+            if( DEBUG ) {
+                Slog.i(TAG,"setDeviceIdleModeLocked: " + mode);
+            }
             mDeviceIdleMode = mode;
             Message msg = mHandler.obtainMessage(MESSAGE_DEVICE_IDLE_CHANGED);
             mHandler.sendMessage(msg);
@@ -1377,7 +1405,9 @@ public class BaikalService extends SystemService {
 
     public void setLightDeviceIdleModeLocked(boolean mode) {
         if( mLightDeviceIdleMode != mode ) {
-            Slog.i(TAG,"setLightDeviceIdleModeLocked: " + mode);
+            if( DEBUG ) {
+                Slog.i(TAG,"setLightDeviceIdleModeLocked: " + mode);
+            }
             mLightDeviceIdleMode = mode;
             Message msg = mHandler.obtainMessage(MESSAGE_LIGHT_DEVICE_IDLE_CHANGED);
             mHandler.sendMessage(msg);
@@ -1447,7 +1477,9 @@ public class BaikalService extends SystemService {
     int currentUid=-1, currentWakefulness=-1;
     public void topAppChanged(ActivityRecord act) {
         if( act == null ) {
-            Slog.i(TAG,"topAppChanged: empty top activity");
+            if( DEBUG ) {
+                Slog.i(TAG,"topAppChanged: empty top activity");
+            }
             if( currentWakefulness != 0 ) {
                 setPerformanceProfile("default");
                 setThermalProfile("default");
@@ -1477,7 +1509,9 @@ public class BaikalService extends SystemService {
             return;
         }
 
-        Slog.i(TAG,"topAppChanged: top activity=" + act.packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"topAppChanged: top activity=" + act.packageName);
+        }
 
         ApplicationProfileInfo info = null;
         synchronized(this) {
@@ -1485,7 +1519,9 @@ public class BaikalService extends SystemService {
         }
 
         if( info == null ) {
-            Slog.i(TAG,"topAppChanged: default top activity");
+            if( DEBUG ) {
+                Slog.i(TAG,"topAppChanged: default top activity");
+            }
             setPerformanceProfile("default");
             setThermalProfile("default");
             return;   
@@ -1522,7 +1558,9 @@ public class BaikalService extends SystemService {
   
 
     private void SystemPropertiesSet(String key, String value) {
-        Slog.d(TAG, "SystemProperties.set("+key+","+value+")");
+        if( DEBUG ) {
+            Slog.d(TAG, "SystemProperties.set("+key+","+value+")");
+        }
         try {
             SystemProperties.set(key,value);
         }
@@ -1539,7 +1577,9 @@ public class BaikalService extends SystemService {
         ApplicationProfileInfo info = new ApplicationProfileInfo();
         info.packageName = packageName;
         mApplicationProfiles.put(packageName, info);
-        Slog.i(TAG,"getAppProfileLocked created profile for package=" + packageName);
+        if( DEBUG ) {
+           Slog.i(TAG,"getAppProfileLocked created profile for package=" + packageName);
+        }
         return info;
     }
 
@@ -1547,12 +1587,16 @@ public class BaikalService extends SystemService {
         if( mApplicationProfiles.containsKey(packageName) ) {
             return mApplicationProfiles.get(packageName);
         }
-        Slog.i(TAG,"getAppProfileLocked package not found package=" + packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"getAppProfileLocked package not found package=" + packageName);
+        }
         return null;
     }
 
     private void setAppProfileLocked(ApplicationProfileInfo info) {
-        Slog.i(TAG,"setAppProfileLocked set info for package=" + info.packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"setAppProfileLocked set info for package=" + info.packageName);
+        }
         mApplicationProfiles.put(info.packageName, info);
         writeConfigFileLocked();
     }
@@ -1562,11 +1606,15 @@ public class BaikalService extends SystemService {
         synchronized(this) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) {
-                Slog.i(TAG,"getAppPerfProfile for package=" + packageName + ", perfProfile=" + info.perfProfile);
+                if( DEBUG ) {
+                    Slog.i(TAG,"getAppPerfProfile for package=" + packageName + ", perfProfile=" + info.perfProfile);
+                }
                 return info.perfProfile;
             }
         }
-        Slog.i(TAG,"getAppPerfProfile default for package=" + packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"getAppPerfProfile default for package=" + packageName);
+        }
         return "default";
 
     }
@@ -1574,11 +1622,15 @@ public class BaikalService extends SystemService {
         synchronized(this) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) {
-                Slog.i(TAG,"getAppThermProfile for package=" + packageName + ", perfProfile=" + info.thermProfile);
+                if( DEBUG ) {
+                    Slog.i(TAG,"getAppThermProfile for package=" + packageName + ", perfProfile=" + info.thermProfile);
+                }
                 return info.thermProfile;
             }
         }
-        Slog.i(TAG,"getAppThermProfile default for package=" + packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"getAppThermProfile default for package=" + packageName);
+        }
         return "default";
     }
     public void setAppPerfProfileInternal(String packageName, String profile) {
@@ -1587,7 +1639,9 @@ public class BaikalService extends SystemService {
             info.perfProfile = profile;
             setAppProfileLocked(info);
         }
-        Slog.i(TAG,"setAppPerfProfile package=" + packageName + ", profile=" + profile);
+        if( DEBUG ) {
+            Slog.i(TAG,"setAppPerfProfile package=" + packageName + ", profile=" + profile);
+        }
     }
 
     public void setAppThermProfileInternal(String packageName, String profile) {
@@ -1596,7 +1650,9 @@ public class BaikalService extends SystemService {
             info.thermProfile = profile;
             setAppProfileLocked(info);
         }
-        Slog.i(TAG,"setAppThermProfile package=" + packageName + ", profile=" + profile);
+        if( DEBUG ) {
+            Slog.i(TAG,"setAppThermProfile package=" + packageName + ", profile=" + profile);
+        }
     }
     
     public boolean isAppRestrictedProfileInternal(String packageName) {
@@ -1604,7 +1660,9 @@ public class BaikalService extends SystemService {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) return  info.isRestricted;
         }
-        Slog.i(TAG,"getAppThermProfile package=" + packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"getAppThermProfile package=" + packageName);
+        }
         return false;
     }
 
@@ -1621,7 +1679,9 @@ public class BaikalService extends SystemService {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) return  info.priority;
         }
-        Slog.i(TAG,"getAppThermProfile package=" + packageName);
+        if( DEBUG ) {
+            Slog.i(TAG,"getAppThermProfile package=" + packageName);
+        }
         return 0;
     }
 
@@ -1636,7 +1696,9 @@ public class BaikalService extends SystemService {
             }
             setAppProfileLocked(info);
         }
-        Slog.i(TAG,"setAppPriority package=" + packageName + ", priority=" + priority);
+        if( DEBUG ) {
+            Slog.i(TAG,"setAppPriority package=" + packageName + ", priority=" + priority);
+        }
         return 0;
     }
 
@@ -1935,11 +1997,15 @@ public class BaikalService extends SystemService {
             if( mProximitySensor != null ) { 
                 mProximityThreshold = mProximitySensor.getMaximumRange();
             }
-            Slog.i(TAG,"Proximity Initialize: sensor=" + mProximitySensor);
+            if( DEBUG ) {
+                Slog.i(TAG,"Proximity Initialize: sensor=" + mProximitySensor);
+            }
         }
 
         void setProximitySensorEnabled(boolean enable) {
-            Slog.i(TAG,"setProximitySensorEnabled: enable=" + enable);
+            if( DEBUG ) {
+                Slog.i(TAG,"setProximitySensorEnabled: enable=" + enable);
+            }
             if( mProximitySensor == null ) return; 
             if (enable) {
                 if (!mProximitySensorEnabled) {
@@ -1960,7 +2026,9 @@ public class BaikalService extends SystemService {
 
                 boolean isInteractive = mPowerManager.isInteractive();
 
-                Slog.i(TAG,"handleProximitySensorEvent: value=" + positive + ", time=" + time);
+                if( DEBUG ) {
+                    Slog.i(TAG,"handleProximitySensorEvent: value=" + positive + ", time=" + time);
+                }
 
                 if( (!mProximityServiceWakeupEnabled && !isInteractive) ||
                     (!mProximityServiceSleepEnabled && isInteractive) ) {
@@ -1975,12 +2043,16 @@ public class BaikalService extends SystemService {
                     proximityNegativeTime = time;
                     if( (time - proximityClickStart) < 2500 ) {
                         proximityClickCount++;
-                        Slog.i(TAG,"handleProximitySensorEvent: open <2000 :" + (time-proximityClickStart) + ":" + proximityClickCount);
+                        if( DEBUG ) {
+                            Slog.i(TAG,"handleProximitySensorEvent: open <2000 :" + (time-proximityClickStart) + ":" + proximityClickCount);
+                        }
                         if( proximityClickCount == 2 ) {
                             handleWakeup(isInteractive);
                         }
                     } else {
-                        Slog.i(TAG,"handleProximitySensorEvent: open >2000 :" + (time-proximityClickStart) + ":0");
+                        if( DEBUG ) {
+                            Slog.i(TAG,"handleProximitySensorEvent: open >2000 :" + (time-proximityClickStart) + ":0");
+                        }
                         proximityClickCount = 0;
                     }
                 } else {
@@ -1988,16 +2060,22 @@ public class BaikalService extends SystemService {
                     if( (time - proximityClickStart) > 2500 ) {
                         proximityClickStart = time;
                         proximityClickCount = 0;
-                        Slog.i(TAG,"handleProximitySensorEvent: closed > 2000 :" + (time-proximityClickStart) + ":0");
+                        if( DEBUG ) {
+                            Slog.i(TAG,"handleProximitySensorEvent: closed > 2000 :" + (time-proximityClickStart) + ":0");
+                        }
                     } else {
-                        Slog.i(TAG,"handleProximitySensorEvent: closed < 2000 :" + (time-proximityClickStart) + ":" + proximityClickCount);
+                        if( DEBUG ) {
+                            Slog.i(TAG,"handleProximitySensorEvent: closed < 2000 :" + (time-proximityClickStart) + ":" + proximityClickCount);
+                        }
                     }
                 }
             }
         }
 
         void handleWakeup(boolean interactive) {
-            Slog.i(TAG,"handleProximitySensorWakeup()");
+            if( DEBUG ) {
+                Slog.i(TAG,"handleProximitySensorWakeup()");
+            }
             if( mPowerManager != null && interactive ) {
                 goToSleep();
             } else {
@@ -2018,7 +2096,9 @@ public class BaikalService extends SystemService {
 
         private void ReleaseWakelock() {
             if (mProximityWakeLock.isHeld()) {
-                Slog.i(TAG,"ProximitySensor: ReleaseWakelock()");
+                if( DEBUG ) {
+                    Slog.i(TAG,"ProximitySensor: ReleaseWakelock()");
+                }
                 mProximityWakeLock.release();
             }
         }
@@ -2026,7 +2106,9 @@ public class BaikalService extends SystemService {
         private void AcquireWakelock(boolean wakeonly) {
             setProximityTimeout(wakeonly);
             if (!mProximityWakeLock.isHeld()) {
-                Slog.i(TAG,"ProximitySensor: AcquireWakelock()");
+                if( DEBUG ) {
+                    Slog.i(TAG,"ProximitySensor: AcquireWakelock()");
+                }
                 mProximityWakeLock.acquire();
             }
         }
@@ -2058,11 +2140,15 @@ public class BaikalService extends SystemService {
 
         void Initialize() {
             mHallSensor = mSensorManager.getDefaultSensor(SENSOR_HALL_TYPE, true);
-            Slog.i(TAG,"Hall Initialize: sensor=" + mHallSensor);
+            if( DEBUG ) {
+                Slog.i(TAG,"Hall Initialize: sensor=" + mHallSensor);
+            }
         }
 
         void setHallSensorEnabled(boolean enable) {
-            Slog.i(TAG,"setHallSensorEnabled: enable=" + enable);
+            if( DEBUG ) {
+                Slog.i(TAG,"setHallSensorEnabled: enable=" + enable);
+            }
             if( mHallSensor == null ) return; 
             if (enable) {
                 if (!mHallSensorEnabled) {
@@ -2080,13 +2166,17 @@ public class BaikalService extends SystemService {
 
         private void handleHallSensorEvent(long time, boolean positive) {
             if (mHallSensorEnabled) {
-                Slog.i(TAG,"handleHallSensorEvent: value=" + positive + ", time=" + time);
+                if( DEBUG ) {
+                    Slog.i(TAG,"handleHallSensorEvent: value=" + positive + ", time=" + time);
+                }
                 handleWakeup(!positive);
             }
         }
 
         void handleWakeup(boolean wakeup) {
-            Slog.i(TAG,"handleHallSensorWakeup()");
+            if( DEBUG ) {
+                Slog.i(TAG,"handleHallSensorWakeup()");
+            }
             if( wakeup ) {
                 wakeUp();
             } else {
