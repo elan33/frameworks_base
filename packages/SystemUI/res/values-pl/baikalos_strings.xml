@@ -27,4 +27,10 @@
     <string name="screenshot_abort_text">Operacja przerwana.</string>
     <!-- Screenrecord -->
     <string name="quick_settings_screenrecord_label">Nagrywanie ekranu</string>
+    <!-- ANBI Tile -->
+    <!-- Volume panel QS tile -->
+    <!-- Sleep Screen QS tile -->
+    <!-- Sound QS Tile -->
+    <!-- CPUInfo tile -->
+    <!-- Sync QS Tile -->
 </resources>

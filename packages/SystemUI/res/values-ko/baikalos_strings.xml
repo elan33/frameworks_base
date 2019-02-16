@@ -26,4 +26,10 @@
     <string name="screenshot_abort_text">작업이 취소됨</string>
     <!-- Screenrecord -->
     <string name="quick_settings_screenrecord_label">화면 녹화</string>
+    <!-- ANBI Tile -->
+    <!-- Volume panel QS tile -->
+    <!-- Sleep Screen QS tile -->
+    <!-- Sound QS Tile -->
+    <!-- CPUInfo tile -->
+    <!-- Sync QS Tile -->
 </resources>
