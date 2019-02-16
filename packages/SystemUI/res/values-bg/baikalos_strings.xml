@@ -15,4 +15,10 @@
     <string name="screenshot_abort_text">Операцията е прекратена.</string>
     <!-- Screenrecord -->
     <string name="quick_settings_screenrecord_label">Запис на екрана</string>
+    <!-- ANBI Tile -->
+    <!-- Volume panel QS tile -->
+    <!-- Sleep Screen QS tile -->
+    <!-- Sound QS Tile -->
+    <!-- CPUInfo tile -->
+    <!-- Sync QS Tile -->
 </resources>
