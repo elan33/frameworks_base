@@ -4006,13 +4006,15 @@ public class NotificationStackScrollLayout extends ViewGroup
     }
 
     private void updatePanelTranslation() {
-        float x = (mVerticalPanelTranslation + mAntiBurnInOffsetX * mInterpolatedDarkAmount);
-        if (!onKeyguard()) {
-            x += getTranslationX();
-        }
+        Log.e(TAG, "mVerticalPanelTranslation=" + mVerticalPanelTranslation + ", mAntiBurnInOffsetX=" + mAntiBurnInOffsetX + ", mInterpolatedDarkAmount=" + mInterpolatedDarkAmount + ", getTranslationX=" + getTranslationX());
+        //float x = (mVerticalPanelTranslation);// + mAntiBurnInOffsetX * mInterpolatedDarkAmount);
+        //if (!onKeyguard()) {
+        //    x += getTranslationX();
+        //}
         //setTranslationX(x);
 
-        Log.e(TAG, "setsetTranslationX=" + x + ", getTranslationX=" + getTranslationX());
+        setTranslationX(mVerticalPanelTranslation + mAntiBurnInOffsetX * mInterpolatedDarkAmount);
+        Log.e(TAG, "getTranslationX=" + getTranslationX());
 
     }
 
