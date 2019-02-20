@@ -52,7 +52,7 @@ public class NotificationIconContainer extends AlphaOptimizedFrameLayout {
      * a dot. A value of 0 means that they are exactly at the end and a value of 1 means it starts
      * 1 icon width early.
      */
-    public static final float OVERFLOW_EARLY_AMOUNT = 0.2f;
+    public static final float OVERFLOW_EARLY_AMOUNT = 0.05f;
     private static final int NO_VALUE = Integer.MIN_VALUE;
     private static final String TAG = "NotificationIconContainer";
     private static final boolean DEBUG = false;
