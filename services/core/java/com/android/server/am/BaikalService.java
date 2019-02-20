@@ -133,7 +133,7 @@ public class BaikalService extends SystemService {
 
     private static final String TAG = "BaikalService";
 
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private static final int SENSOR_HALL_TYPE=33171016;
 
@@ -1541,7 +1541,9 @@ public class BaikalService extends SystemService {
                     mIsReaderModeActive = false;
                 }
                 mCurrentPerformanceProfile = profile;
-                SystemPropertiesSet("baikal.perf.profile",profile);
+                
+                //SystemPropertiesSet("baikal.perf.profile",profile);
+                setPerformanceProfileInternal(profile);
             }
         }
     }
@@ -1556,6 +1558,48 @@ public class BaikalService extends SystemService {
         }
     }
   
+
+    private void setPerformanceProfileInternal(String profile)
+    {
+        if( isBaikalPerformanceProfiles() ) {
+            SystemPropertiesSet("baikal.perf.profile",profile);
+        } 
+        else if( isSpectrumProfiles() ) {
+            SystemPropertiesSet("persist.spectrum.profile",mapBaikalToSpectrumProfile(profile, true));
+        }
+        else {
+        }
+    }
+
+    private boolean isBaikalPerformanceProfiles() {
+        return (SystemProperties.get("baikal.eng.perf","0")).equals("1");
+    }
+
+    private boolean isSpectrumProfiles() {
+        return (SystemProperties.get("spectrum.support","0")).equals("1");
+    }
+
+    private String mapBaikalToSpectrumProfile(String profile, boolean defmap) {
+
+        Slog.i(TAG,"spectrum: profile=" + profile);
+        if(profile.equals("balance")) {
+                return "0";
+        } else if(profile.equals("performance")) {
+                return "1";
+        } else if(profile.equals("battery")) {
+                return "2";
+        } else if(profile.equals("gaming")) {
+                return "3";
+        } else if(profile.equals("reader")) {
+                return "2";
+        } else {
+            if( defmap ) {
+                return mapBaikalToSpectrumProfile(SystemProperties.get("persist.baikal.perf.default","balance"), false);
+            } else {
+                return "0";
+            }
+        }
+    }
 
     private void SystemPropertiesSet(String key, String value) {
         if( DEBUG ) {
