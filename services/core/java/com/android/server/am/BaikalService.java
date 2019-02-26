@@ -134,6 +134,7 @@ public class BaikalService extends SystemService {
     private static final String TAG = "BaikalService";
 
     private static final boolean DEBUG = false;
+    private static final boolean DEBUG_PROFILE = DEBUG | true;
 
     private static final int SENSOR_HALL_TYPE=33171016;
 
@@ -311,6 +312,9 @@ public class BaikalService extends SystemService {
                 }
 
                 mConstants.updateConstantsLocked();
+
+                setPerformanceProfile("default");
+                setThermalProfile("default");
             }
 
         }
@@ -1460,6 +1464,11 @@ public class BaikalService extends SystemService {
     private String awakePerformanceProfile = "default"; 
     private String awakeThermalProfile = "default"; 
     private void onWakefulnessChanged() {
+
+        if( DEBUG_PROFILE ) {
+            Slog.i(TAG,"onWakefulnessChanged");
+        }
+
         synchronized(this) {
             if( getWakefulnessLocked() == 0 ) {
                 awakePerformanceProfile = mCurrentPerformanceProfile;
@@ -1477,7 +1486,7 @@ public class BaikalService extends SystemService {
     int currentUid=-1, currentWakefulness=-1;
     public void topAppChanged(ActivityRecord act) {
         if( act == null ) {
-            if( DEBUG ) {
+            if( DEBUG_PROFILE ) {
                 Slog.i(TAG,"topAppChanged: empty top activity");
             }
             if( currentWakefulness != 0 ) {
@@ -1485,6 +1494,7 @@ public class BaikalService extends SystemService {
                 setThermalProfile("default");
             }
             currentUid = -1;
+            currentWakefulness = getWakefulnessLocked();
             return;
         }
 
@@ -1509,7 +1519,7 @@ public class BaikalService extends SystemService {
             return;
         }
 
-        if( DEBUG ) {
+        if( DEBUG_PROFILE ) {
             Slog.i(TAG,"topAppChanged: top activity=" + act.packageName);
         }
 
@@ -1519,7 +1529,7 @@ public class BaikalService extends SystemService {
         }
 
         if( info == null ) {
-            if( DEBUG ) {
+            if( DEBUG_PROFILE ) {
                 Slog.i(TAG,"topAppChanged: default top activity");
             }
             setPerformanceProfile("default");
@@ -1533,9 +1543,17 @@ public class BaikalService extends SystemService {
 
     private String mCurrentPerformanceProfile = "none";
     private void setPerformanceProfile(String profile) {
+
+        if( DEBUG_PROFILE ) {
+            Slog.i(TAG,"setPerformanceProfile: profile=" + profile);
+        }
+
         synchronized(mCurrentPerformanceProfile) {
             if ( !mCurrentPerformanceProfile.equals(profile) ) {
                 if( profile.equals("reader") ) {
+                    if( DEBUG_PROFILE ) {
+                        Slog.i(TAG,"setPerformanceProfile: reader mode activated");
+                    }
                     mIsReaderModeActive = true;
                 } else {
                     mIsReaderModeActive = false;
@@ -1544,16 +1562,30 @@ public class BaikalService extends SystemService {
                 
                 //SystemPropertiesSet("baikal.perf.profile",profile);
                 setPerformanceProfileInternal(profile);
+            } else {
+                if( DEBUG_PROFILE ) {
+                    Slog.i(TAG,"setPerformanceProfile: ignore already active profile=" + profile);
+                }   
             }
         }
     }
 
     private String mCurrentThermalProfile = "none";
     private void setThermalProfile(String profile) {
+
+        if( DEBUG_PROFILE ) {
+            Slog.i(TAG,"setThermalProfile: profile=" + profile);
+        }
+
         synchronized(mCurrentThermalProfile) {
             if ( !mCurrentThermalProfile.equals(profile) ) {
                 mCurrentThermalProfile = profile;
+                SystemPropertiesSet("baikal.therm.profile","");
                 SystemPropertiesSet("baikal.therm.profile",profile);
+            } else {
+                if( DEBUG_PROFILE ) {
+                    Slog.i(TAG,"setThermalProfile: ignore already active profile=" + profile);
+                }   
             }
         }
     }
@@ -1562,12 +1594,23 @@ public class BaikalService extends SystemService {
     private void setPerformanceProfileInternal(String profile)
     {
         if( isBaikalPerformanceProfiles() ) {
+            if( DEBUG_PROFILE ) {
+                Slog.i(TAG,"setPerformanceProfileInternal: set baikal profile=" + profile);
+            }   
+            SystemPropertiesSet("baikal.perf.profile","");
             SystemPropertiesSet("baikal.perf.profile",profile);
         } 
         else if( isSpectrumProfiles() ) {
+            if( DEBUG_PROFILE ) {
+                Slog.i(TAG,"setPerformanceProfileInternal: set spectrum profile=" + profile);
+            }   
+            SystemPropertiesSet("baikal.perf.profile","");
             SystemPropertiesSet("persist.spectrum.profile",mapBaikalToSpectrumProfile(profile, true));
         }
         else {
+            if( DEBUG_PROFILE ) {
+                Slog.i(TAG,"setPerformanceProfileInternal: no perf engine defined profile=" + profile);
+            }   
         }
     }
 
