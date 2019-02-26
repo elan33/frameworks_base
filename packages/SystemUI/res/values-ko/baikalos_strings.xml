@@ -27,9 +27,28 @@
     <!-- Screenrecord -->
     <string name="quick_settings_screenrecord_label">화면 녹화</string>
     <!-- ANBI Tile -->
+    <string name="quick_settings_anbi_label">터치 실수 방지</string>
+    <string name="accessibility_quick_settings_anbi_changed_off">터치 실수 방지 꺼짐</string>
+    <string name="accessibility_quick_settings_anbi_changed_on">터치 실수 방지 켜짐</string>
     <!-- Volume panel QS tile -->
+    <string name="quick_settings_volume_panel_label">음량 조절 창</string>
     <!-- Sleep Screen QS tile -->
+    <string name="quick_settings_sleepscreen_label">절전 화면</string>
     <!-- Sound QS Tile -->
+    <string name="quick_settings_sound_label">소리</string>
+    <string name="quick_settings_sound_ring">벨소리</string>
+    <string name="quick_settings_sound_vibrate">진동</string>
+    <string name="quick_settings_sound_dnd">방해 금지</string>
     <!-- CPUInfo tile -->
+    <string name="quick_settings_cpuinfo_label">CPU 정보</string>
+    <string name="accessibility_quick_settings_cpuinfo_off">CPU의 정보 끄기</string>
+    <string name="accessibility_quick_settings_cpuinfo_on">CPU 정보 켜기</string>
+    <string name="accessibility_quick_settings_cpuinfo_changed_off">CPU의 정보 꺼짐</string>
+    <string name="accessibility_quick_settings_cpuinfo_changed_on">CPU의 정보 켜짐</string>
     <!-- Sync QS Tile -->
+    <string name="quick_settings_sync_label">동기화</string>
+    <string name="accessibility_quick_settings_sync_off">동기화 꺼짐</string>
+    <string name="accessibility_quick_settings_sync_on">동기화 켜기</string>
+    <string name="accessibility_quick_settings_sync_changed_off">동기화 꺼짐</string>
+    <string name="accessibility_quick_settings_sync_changed_on">동기화 켜짐.</string>
 </resources>
