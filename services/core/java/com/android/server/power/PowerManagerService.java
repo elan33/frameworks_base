@@ -2542,6 +2542,14 @@ public final class PowerManagerService extends SystemService
             } else if (isValidBrightness(mScreenBrightnessOverrideFromWindowManager)) {
                 autoBrightness = false;
                 screenBrightnessOverride = mScreenBrightnessOverrideFromWindowManager;
+            } else if (mBrightnessOverrideFromBaikalService == -2 ) {
+                mDisplayPowerRequest.lowPowerMode = true;
+                autoBrightness = (mScreenBrightnessModeSetting ==
+                        Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
+                screenBrightnessOverride = -1;
+            } else if ( mBrightnessOverrideFromBaikalService > 0 && isValidBrightness(mBrightnessOverrideFromBaikalService) ) {
+                autoBrightness = false;
+                screenBrightnessOverride = mBrightnessOverrideFromBaikalService;
             } else {
                 autoBrightness = (mScreenBrightnessModeSetting ==
                         Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
@@ -2556,8 +2564,8 @@ public final class PowerManagerService extends SystemService
 
             updatePowerRequestFromBatterySaverPolicy(mDisplayPowerRequest);
 
-            if( !mDisplayPowerRequest.lowPowerMode ) {
-                mDisplayPowerRequest.lowPowerMode = mReaderModeActive;
+            if( mBrightnessOverrideFromBaikalService == -2 ) {
+                mDisplayPowerRequest.lowPowerMode = true;
             }
 
             if (mDisplayPowerRequest.policy == DisplayPowerRequest.POLICY_DOZE) {
@@ -2777,12 +2785,12 @@ public final class PowerManagerService extends SystemService
         if (needWakeLockSuspendBlocker && !mHoldingWakeLockSuspendBlocker) {
             mWakeLockSuspendBlocker.acquire();
             mHoldingWakeLockSuspendBlocker = true;
-            SystemPropertiesSet("power.wake_lock","1");
+            //SystemPropertiesSet("power.wake_lock","1");
         }
         if (needDisplaySuspendBlocker && !mHoldingDisplaySuspendBlocker) {
             mDisplaySuspendBlocker.acquire();
             mHoldingDisplaySuspendBlocker = true;
-            SystemPropertiesSet("power.wake_display","1");
+            //SystemPropertiesSet("power.wake_display","1");
         }
 
         // Inform the power HAL about interactive mode.
@@ -2805,12 +2813,12 @@ public final class PowerManagerService extends SystemService
         if (!needWakeLockSuspendBlocker && mHoldingWakeLockSuspendBlocker) {
             mWakeLockSuspendBlocker.release();
             mHoldingWakeLockSuspendBlocker = false;
-            SystemPropertiesSet("power.wake_lock","0");
+            //SystemPropertiesSet("power.wake_lock","0");
         }
         if (!needDisplaySuspendBlocker && mHoldingDisplaySuspendBlocker) {
             mDisplaySuspendBlocker.release();
             mHoldingDisplaySuspendBlocker = false;
-            SystemPropertiesSet("power.wake_display","0");
+            //SystemPropertiesSet("power.wake_display","0");
         }
 
         // Enable auto-suspend if needed.
@@ -2821,7 +2829,9 @@ public final class PowerManagerService extends SystemService
 
 
     boolean mReaderModeActive = false;
+    int mBrightnessOverrideFromBaikalService = -1;
     long lastInteractiveHint = 0;
+    long lastLaunchHint = 0;
     /**
      * Return true if we must keep a suspend blocker active on behalf of the display.
      * We do so if the screen is on or is in transition between states.
@@ -2833,13 +2843,19 @@ public final class PowerManagerService extends SystemService
         if (mDisplayPowerRequest.isBrightOrDim()) {
             if( mBaikalService != null ) {
                 boolean readerModeActive = mBaikalService.isReaderMode();
+                int brightnessOverrideFromBaikalService = mBaikalService.getBrightnessOverride();
+                if( brightnessOverrideFromBaikalService != mBrightnessOverrideFromBaikalService ) {
+                    Slog.d(TAG, "Brightnsess override changed to " + brightnessOverrideFromBaikalService);
+                    mBrightnessOverrideFromBaikalService = brightnessOverrideFromBaikalService;
+                    updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
+                }
                 if( mReaderModeActive != readerModeActive ) {
                     Slog.d(TAG, "ReaderMode changed to " + readerModeActive);
-                    updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
                     mReaderModeActive = readerModeActive;
+                    updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
                 }
                 if( readerModeActive ) {   
-                    if( SystemClock.elapsedRealtime() - lastInteractiveHint > 500 ) {
+                    if( (SystemClock.elapsedRealtime() - lastInteractiveHint) > 1000 ) {
                         return false;
                     } else {
                         Slog.d(TAG, "ReaderMode blocked by user activity");
@@ -3411,6 +3427,8 @@ public final class PowerManagerService extends SystemService
                 break;
             case PowerHint.LAUNCH: // 1: activate launch boost 0: deactivate.
                 if (data == 1 && mBatterySaverController.isLaunchBoostDisabled()) {
+                    lastLaunchHint = SystemClock.elapsedRealtime();
+                    scheduleUpdatePowerState();
                     return;
                 }
                 break;

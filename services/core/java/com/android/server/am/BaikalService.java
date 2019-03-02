@@ -177,6 +177,7 @@ public class BaikalService extends SystemService {
     private boolean mTorchNotification;
     private boolean mActiveIncomingCall;
     private boolean mIsReaderModeActive;
+    private int mBrightnessOverride = -1;
 
     private boolean mTorchEnabled;
 
@@ -313,6 +314,7 @@ public class BaikalService extends SystemService {
 
                 mConstants.updateConstantsLocked();
 
+                setBrightnessOverrideLocked(0);
                 setPerformanceProfile("default");
                 setThermalProfile("default");
             }
@@ -874,6 +876,13 @@ public class BaikalService extends SystemService {
         }
     };
 
+
+    public int getBrightnessOverride() {
+        synchronized(this) {
+            return getBrightnessOverrideLocked();
+        }
+    }
+
     public boolean isReaderMode() {
         synchronized(this) {
             return isReaderModeLocked();
@@ -1379,6 +1388,11 @@ public class BaikalService extends SystemService {
     }
 
 
+    
+    public int getBrightnessOverrideLocked() {
+        return mBrightnessOverride;
+    }
+
     public boolean isReaderModeLocked() {
         return mIsReaderModeActive;
     }
@@ -1532,6 +1546,7 @@ public class BaikalService extends SystemService {
             if( DEBUG_PROFILE ) {
                 Slog.i(TAG,"topAppChanged: default top activity");
             }
+            setBrightnessOverrideLocked(0);
             setPerformanceProfile("default");
             setThermalProfile("default");
             return;   
@@ -1539,6 +1554,7 @@ public class BaikalService extends SystemService {
 
         setPerformanceProfile(info.perfProfile);
         setThermalProfile(info.thermProfile);
+        setBrightnessOverrideLocked(info.brightness);
     }
 
     private String mCurrentPerformanceProfile = "none";
@@ -1559,6 +1575,7 @@ public class BaikalService extends SystemService {
                     mIsReaderModeActive = false;
                 }
                 mCurrentPerformanceProfile = profile;
+
                 
                 //SystemPropertiesSet("baikal.perf.profile",profile);
                 setPerformanceProfileInternal(profile);
@@ -1569,6 +1586,65 @@ public class BaikalService extends SystemService {
             }
         }
     }
+
+/*
+    public static final int SCREEN_BRIGHTNESS_DEFAULT = 0;
+    public static final int SCREEN_BRIGHTNESS_10 = 1;
+    public static final int SCREEN_BRIGHTNESS_20 = 2;
+    public static final int SCREEN_BRIGHTNESS_30 = 3;
+    public static final int SCREEN_BRIGHTNESS_40 = 4;
+    public static final int SCREEN_BRIGHTNESS_50 = 5;
+    public static final int SCREEN_BRIGHTNESS_60 = 6;
+    public static final int SCREEN_BRIGHTNESS_70 = 7;
+    public static final int SCREEN_BRIGHTNESS_80 = 8;
+    public static final int SCREEN_BRIGHTNESS_90 = 9;
+    public static final int SCREEN_BRIGHTNESS_AUTO_LOW = 10;
+    public static final int SCREEN_BRIGHTNESS_FULL = 11;
+*/
+
+    void setBrightnessOverrideLocked(int brightness) {
+    switch( brightness ) {
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_DEFAULT:
+            mBrightnessOverride = -1;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_AUTO_LOW:
+            mBrightnessOverride = -2;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_FULL:
+            mBrightnessOverride = PowerManager.BRIGHTNESS_ON;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_10:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 3)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_20:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 4)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_30:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 6)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_40:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 8)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_50:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 10)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_60:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 20)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_70:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 35)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_80:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 60)/100;
+            break;
+        case BaikalServiceManager.SCREEN_BRIGHTNESS_90:
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 100)/100;
+            break;
+        default:
+            mBrightnessOverride = -1;
+        }
+    }
+
 
     private String mCurrentThermalProfile = "none";
     private void setThermalProfile(String profile) {
@@ -1767,7 +1843,7 @@ public class BaikalService extends SystemService {
             if( info != null ) return  info.priority;
         }
         if( DEBUG ) {
-            Slog.i(TAG,"getAppThermProfile package=" + packageName);
+            Slog.i(TAG,"getAppPriority package=" + packageName);
         }
         return 0;
     }
@@ -1789,12 +1865,39 @@ public class BaikalService extends SystemService {
         return 0;
     }
 
+    public int getAppBrightnessInternal(String packageName) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getAppProfileLocked(packageName);
+            if( info != null ) {
+                Slog.i(TAG,"getAppBrightness package=" + packageName + ", brightness=" + info.brightness);
+                return  info.brightness;
+            }
+        }
+        //if( DEBUG ) {
+            Slog.i(TAG,"getAppBrightness package=" + packageName);
+        //}
+        return 0;
+    }
+
+    public int setAppBrightnessInternal(String packageName, int brightness) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
+            info.brightness = brightness;
+            setAppProfileLocked(info);
+        }
+        //if( DEBUG ) {
+            Slog.i(TAG,"setAppBrightness package=" + packageName + ", brightness=" + brightness);
+        //}
+        return 0;
+    }
+
     public String getDefaultPerfProfileInternal() {
         return SystemProperties.get("persist.baikal.perf.default","balance");
     }
 
     public void setDefaultPerfProfileInternal(String profile) {
         SystemPropertiesSet("persist.baikal.perf.default",profile);
+        SystemPropertiesSet("baikal.perf.profile","");
         SystemPropertiesSet("baikal.perf.profile",mCurrentPerformanceProfile);
     }
 
@@ -1804,6 +1907,7 @@ public class BaikalService extends SystemService {
 
     public void setDefaultThermProfileInternal(String profile) {
         SystemPropertiesSet("persist.baikal.therm.default",profile);
+        SystemPropertiesSet("baikal.therm.profile","");
         SystemPropertiesSet("baikal.therm.profile",mCurrentThermalProfile);
     }
 
@@ -1863,6 +1967,11 @@ public class BaikalService extends SystemService {
                         info.thermProfile = parser.getAttributeValue(null, "tp");
                         info.isRestricted = Boolean.parseBoolean(parser.getAttributeValue(null, "rs"));
                         info.priority = Integer.parseInt(parser.getAttributeValue(null, "pr"));
+                        try {
+                            info.brightness = Integer.parseInt(parser.getAttributeValue(null, "br"));
+                        } catch(Exception e1) {
+                            info.brightness = 0;
+                        }
                         setAppProfileLocked(info);
                         break;
                     default:
@@ -1932,6 +2041,7 @@ public class BaikalService extends SystemService {
                 out.attribute(null, "tp",info.thermProfile);
                 out.attribute(null, "rs",Boolean.toString(info.isRestricted));
                 out.attribute(null, "pr",Integer.toString(info.priority));
+                out.attribute(null, "br",Integer.toString(info.brightness));
             out.endTag(null, "app");
         }
         out.endTag(null, "config");
@@ -2356,6 +2466,24 @@ public class BaikalService extends SystemService {
             }
         }
 
+        @Override public int getAppBrightness(String packageName) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getAppBrightnessInternal(packageName);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setAppBrightness(String packageName, int brightness) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setAppBrightnessInternal(packageName,brightness);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
         @Override public String getDefaultPerfProfile() {
             long ident = Binder.clearCallingIdentity();
             try {
@@ -2397,11 +2525,13 @@ public class BaikalService extends SystemService {
         public String perfProfile;
         public String thermProfile;
         public boolean isRestricted;
-        public int priority; 
+        public int priority;
+        public int brightness; 
 
         public ApplicationProfileInfo() {
             perfProfile = "default";
             thermProfile = "default";
+            brightness = 0;
         }
 
         @Override
@@ -2410,7 +2540,8 @@ public class BaikalService extends SystemService {
             ", perfProfile=" + perfProfile +
             ", thermProfile=" + thermProfile +
             ", isRestricted=" + isRestricted +
-            ", priority=" + priority;
+            ", priority=" + priority +
+            ", brightness=" + brightness;
             return ret;
         }
     }

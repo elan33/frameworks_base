@@ -30,6 +30,33 @@ import android.content.Context;
 @TestApi
 @SystemService(Context.BAIKAL_SERVICE_CONTROLLER)
 public class BaikalServiceManager {
+
+    public static final int PRIO_CRITICAL = 0;
+    public static final int PRIO_SYSTEM = 1;
+    public static final int PRIO_UNRESTRICTED = 2;
+    public static final int PRIO_ALARM_CLOCK = 3;
+    public static final int PRIO_BACKGROUND_NOTIFICATIONS = 3;
+    public static final int PRIO_BACKGROUND_NAVIGATION = 4;
+    public static final int PRIO_MESSENGER = 3;
+    public static final int PRIO_REGULAR = 5;
+    public static final int PRIO_GAME = 5;
+    public static final int PRIO_BOOKREADER = 3;
+    public static final int PRIO_RESTRICTED = 5;
+    public static final int PRIO_TOP_ONLY = 5;
+
+    public static final int SCREEN_BRIGHTNESS_DEFAULT = 0;
+    public static final int SCREEN_BRIGHTNESS_10 = 1;
+    public static final int SCREEN_BRIGHTNESS_20 = 2;
+    public static final int SCREEN_BRIGHTNESS_30 = 3;
+    public static final int SCREEN_BRIGHTNESS_40 = 4;
+    public static final int SCREEN_BRIGHTNESS_50 = 5;
+    public static final int SCREEN_BRIGHTNESS_60 = 6;
+    public static final int SCREEN_BRIGHTNESS_70 = 7;
+    public static final int SCREEN_BRIGHTNESS_80 = 8;
+    public static final int SCREEN_BRIGHTNESS_90 = 9;
+    public static final int SCREEN_BRIGHTNESS_AUTO_LOW = 10;
+    public static final int SCREEN_BRIGHTNESS_FULL = 11;
+
     private final Context mContext;
     private final IBaikalServiceController mService;
 
@@ -101,6 +128,23 @@ public class BaikalServiceManager {
     public void setAppPriority(String packageName, int priority) {
         try {
             mService.setAppPriority(packageName,priority);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
+    public int getAppBrightness(String packageName) {
+        try {
+            return mService.getAppBrightness(packageName);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return 0;
+        }
+    }
+
+    public void setAppBrightness(String packageName, int brightness) {
+        try {
+            mService.setAppBrightness(packageName,brightness);
         } catch (RemoteException e) {
             e.rethrowFromSystemServer();
         }

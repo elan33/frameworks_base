@@ -29,9 +29,11 @@ interface IBaikalServiceController {
     void setAppRestrictedProfile(String packageName, boolean restricted);
     int getAppPriority(String packageName);
     void setAppPriority(String packageName, int priority);
+    int getAppBrightness(String packageName);
+    void setAppBrightness(String packageName, int brightness);
     String getDefaultPerfProfile();
     void setDefaultPerfProfile(String profile);
     String getDefaultThermProfile();
     void setDefaultThermProfile(String profile);
-
+    
 }

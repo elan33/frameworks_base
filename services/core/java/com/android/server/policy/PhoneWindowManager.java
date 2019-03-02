@@ -690,6 +690,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mVolumeMusicControlActive;
     boolean mVolumeMusicControl;
 
+    boolean mLidEnabled;
+    boolean mLidReversed;
+
+    boolean mLidIgnore;
+
+
     int mPointerLocationMode = 0; // guarded by mLock
 
     // The last window we were told about in focusChanged.
@@ -1183,6 +1189,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.VOLUME_BUTTON_MUSIC_CONTROL), false, this,
                     UserHandle.USER_ALL);
+
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.Global.BAIKAL_LID_SENSOR_ENABLED), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.Global.BAIKAL_LID_SENSOR_REVERSE), false, this,
+                    UserHandle.USER_ALL);
+
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.Global.BAIKAL_LID_IGNORE_WAKE), false, this,
+                    UserHandle.USER_ALL);
+
             updateSettings();
         }
 
@@ -2960,6 +2978,15 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mVolumeMusicControl = Settings.System.getIntForUser(resolver,
                     Settings.System.VOLUME_BUTTON_MUSIC_CONTROL, 0,
                     UserHandle.USER_CURRENT) != 0;
+
+            mLidEnabled = Settings.Global.getInt(resolver,
+                    Settings.Global.BAIKAL_LID_SENSOR_ENABLED, 0) == 1;
+
+            mLidReversed = Settings.Global.getInt(resolver,
+                    Settings.Global.BAIKAL_LID_SENSOR_REVERSE, 0) == 1;
+
+            mLidIgnore = Settings.Global.getInt(resolver,
+                    Settings.Global.BAIKAL_LID_IGNORE_WAKE, 0) == 1;
 
             if (!mContext.getResources()
                     .getBoolean(com.android.internal.R.bool.config_volumeHushGestureEnabled)) {
@@ -6890,6 +6917,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     @Override
     public void notifyLidSwitchChanged(long whenNanos, boolean lidOpen) {
         // lid changed state
+
+
+        if( !mLidEnabled ) return;
+
+        if( mLidReversed ) lidOpen = !lidOpen;
+
         final int newLidState = lidOpen ? LID_OPEN : LID_CLOSED;
         if (newLidState == mLidState) {
             return;
@@ -7122,8 +7155,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         if (isValidGlobalKey(keyCode)
                 && mGlobalKeyManager.shouldHandleGlobalKey(keyCode, event)) {
             if (isWakeKey) {
-                wakeUp(event.getEventTime(), mAllowTheaterModeWakeFromKey,
-                       "android.policy:KEY", true);
+                if( mLidState == LID_CLOSED && mLidIgnore ) {
+                    Slog.w(TAG, "Ignore wake while LID closed");
+                } else {
+                    wakeUp(event.getEventTime(), mAllowTheaterModeWakeFromKey,
+                           "android.policy:KEY", true);
+                }
             }
             return result;
         }

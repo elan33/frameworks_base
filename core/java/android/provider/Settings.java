@@ -11884,6 +11884,14 @@ public final class Settings {
         private static final Validator BAIKAL_LID_SENSOR_REVERSE_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
+        /** @hide */
+        public static final String BAIKAL_LID_IGNORE_WAKE = "baikal_lid_ignore_wake";
+
+        /** @hide */
+        private static final Validator BAIKAL_LID_IGNORE_WAKE_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+
         /**
          * Battery Saver specific settings
          * This is encoded as a key=value list, separated by commas. Ex:
