@@ -28,9 +28,28 @@
     <!-- Screenrecord -->
     <string name="quick_settings_screenrecord_label">屏幕录像</string>
     <!-- ANBI Tile -->
+    <string name="quick_settings_anbi_label">防止误触</string>
+    <string name="accessibility_quick_settings_anbi_changed_off">防误触已关闭</string>
+    <string name="accessibility_quick_settings_anbi_changed_on">防止误触已启用</string>
     <!-- Volume panel QS tile -->
+    <string name="quick_settings_volume_panel_label">音量面板</string>
     <!-- Sleep Screen QS tile -->
+    <string name="quick_settings_sleepscreen_label">关闭屏幕</string>
     <!-- Sound QS Tile -->
+    <string name="quick_settings_sound_label">声音</string>
+    <string name="quick_settings_sound_ring">铃声</string>
+    <string name="quick_settings_sound_vibrate">振动</string>
+    <string name="quick_settings_sound_dnd">勿扰模式</string>
     <!-- CPUInfo tile -->
+    <string name="quick_settings_cpuinfo_label">CPU 信息</string>
+    <string name="accessibility_quick_settings_cpuinfo_off">关闭 CPU 信息</string>
+    <string name="accessibility_quick_settings_cpuinfo_on">启用 CPU 信息</string>
+    <string name="accessibility_quick_settings_cpuinfo_changed_off">CPU 信息已关闭</string>
+    <string name="accessibility_quick_settings_cpuinfo_changed_on">CPU 信息已启用</string>
     <!-- Sync QS Tile -->
+    <string name="quick_settings_sync_label">同步</string>
+    <string name="accessibility_quick_settings_sync_off">停用同步</string>
+    <string name="accessibility_quick_settings_sync_on">启用同步</string>
+    <string name="accessibility_quick_settings_sync_changed_off">同步已关闭</string>
+    <string name="accessibility_quick_settings_sync_changed_on">同步已开启</string>
 </resources>
