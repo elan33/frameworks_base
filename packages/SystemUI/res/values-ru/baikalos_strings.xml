@@ -28,9 +28,28 @@
     <!-- Screenrecord -->
     <string name="quick_settings_screenrecord_label">Запись экрана</string>
     <!-- ANBI Tile -->
+    <string name="quick_settings_anbi_label">Защита от случайных касаний</string>
+    <string name="accessibility_quick_settings_anbi_changed_off">Защита от случайных касаний отключена</string>
+    <string name="accessibility_quick_settings_anbi_changed_on">Защита от случайных касаний включена</string>
     <!-- Volume panel QS tile -->
+    <string name="quick_settings_volume_panel_label">Панель громкости</string>
     <!-- Sleep Screen QS tile -->
+    <string name="quick_settings_sleepscreen_label">Выключить экран</string>
     <!-- Sound QS Tile -->
+    <string name="quick_settings_sound_label">Звук</string>
+    <string name="quick_settings_sound_ring">Звонок</string>
+    <string name="quick_settings_sound_vibrate">Вибрация</string>
+    <string name="quick_settings_sound_dnd">\"Не беспокоить\"</string>
     <!-- CPUInfo tile -->
+    <string name="quick_settings_cpuinfo_label">Информация о ЦП</string>
+    <string name="accessibility_quick_settings_cpuinfo_off">Информация о процессоре выключена</string>
+    <string name="accessibility_quick_settings_cpuinfo_on">Информация о процессоре включена</string>
+    <string name="accessibility_quick_settings_cpuinfo_changed_off">Информация о процессоре отключена</string>
+    <string name="accessibility_quick_settings_cpuinfo_changed_on">Информация о процессоре включена</string>
     <!-- Sync QS Tile -->
+    <string name="quick_settings_sync_label">Синхронизация</string>
+    <string name="accessibility_quick_settings_sync_off">Синхронизация выключена</string>
+    <string name="accessibility_quick_settings_sync_on">Синхронизация включена</string>
+    <string name="accessibility_quick_settings_sync_changed_off">Синхронизация выключена</string>
+    <string name="accessibility_quick_settings_sync_changed_on">Синхронизация включена</string>
 </resources>
