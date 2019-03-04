@@ -317,6 +317,8 @@ public class BaikalService extends SystemService {
                 setBrightnessOverrideLocked(0);
                 setPerformanceProfile("default");
                 setThermalProfile("default");
+                mCurrentThermalProfile = "";
+                mCurrentPerformanceProfile = "";
             }
 
         }
