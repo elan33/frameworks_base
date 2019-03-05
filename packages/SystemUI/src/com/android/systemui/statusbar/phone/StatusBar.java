@@ -257,7 +257,7 @@ import com.android.systemui.statusbar.policy.ZenModeController;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
 import com.android.systemui.volume.VolumeComponent;
 
-import ru.baikalos.gear.util.ThemeOverlayHelper;
+import com.cerberusos.gear.util.ThemeOverlayHelper;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -824,7 +824,7 @@ public class StatusBar extends SystemUI implements DemoMode,
 
         Dependency.get(ConfigurationController.class).addCallback(this);
 
-        mBaikalOSSettingsObserver.observe();
+        mCerberusOSSettingsObserver.observe();
     }
 
     // ================================================================================
@@ -4158,7 +4158,7 @@ public class StatusBar extends SystemUI implements DemoMode,
         }
         */
 
-        // BAIKALOS theming
+        // CERBERUSOS theming
         mUiOffloadThread.submit(() -> {
             ThemeOverlayHelper.updateOverlays(mContext, mOverlayManager,
                     mLockscreenUserManager.getCurrentUserId());
@@ -5346,9 +5346,9 @@ public class StatusBar extends SystemUI implements DemoMode,
         return mVrMode;
     }
 
-    private BaikalOSSettingsObserver mBaikalOSSettingsObserver = new BaikalOSSettingsObserver(mHandler);
-    private class BaikalOSSettingsObserver extends ContentObserver {
-        BaikalOSSettingsObserver(Handler handler) {
+    private CerberusOSSettingsObserver mCerberusOSSettingsObserver = new CerberusOSSettingsObserver(mHandler);
+    private class CerberusOSSettingsObserver extends ContentObserver {
+        CerberusOSSettingsObserver(Handler handler) {
             super(handler);
         }
 
@@ -6058,7 +6058,7 @@ public class StatusBar extends SystemUI implements DemoMode,
                 }
             };
 
-    // BaikalOS additions start
+    // CerberusOS additions start
     private void updateRecentsMode() {
         boolean slimRecents = Settings.System.getIntForUser(mContext.getContentResolver(),
                 Settings.System.USE_SLIM_RECENTS, 0, UserHandle.USER_CURRENT) == 1;

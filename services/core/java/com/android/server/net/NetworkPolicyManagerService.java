@@ -228,7 +228,7 @@ import com.android.server.EventLogTags;
 import com.android.server.LocalServices;
 import com.android.server.ServiceThread;
 import com.android.server.SystemConfig;
-import com.android.server.am.BaikalService;
+import com.android.server.am.CerberusService;
 
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;
@@ -643,7 +643,7 @@ public class NetworkPolicyManagerService extends INetworkPolicyManager.Stub {
                     mPowerSaveWhitelistAppIds.put(uid, true);
                 }
             }
-            int gmsUid = BaikalService.gmsUid();
+            int gmsUid = CerberusService.gmsUid();
             if( gmsUid != -1 ) {
                 mPowerSaveWhitelistExceptIdleAppIds.put(gmsUid, true);
                 mPowerSaveWhitelistAppIds.put(gmsUid, true);

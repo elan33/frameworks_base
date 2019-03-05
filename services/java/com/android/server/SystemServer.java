@@ -67,7 +67,7 @@ import com.android.internal.util.EmergencyAffordanceManager;
 import com.android.internal.widget.ILockSettings;
 import com.android.server.accessibility.AccessibilityManagerService;
 import com.android.server.am.ActivityManagerService;
-import com.android.server.am.BaikalService;
+import com.android.server.am.CerberusService;
 import com.android.server.audio.AudioService;
 import com.android.server.broadcastradio.BroadcastRadioService;
 import com.android.server.camera.CameraServiceProxy;
@@ -963,8 +963,8 @@ public final class SystemServer {
             mSystemServiceManager.startService(PinnerService.class);
             traceEnd();
 
-            traceBeginAndSlog("BaikalService");
-            mSystemServiceManager.startService(BaikalService.class);
+            traceBeginAndSlog("CerberusService");
+            mSystemServiceManager.startService(CerberusService.class);
             traceEnd();
 
         } catch (RuntimeException e) {

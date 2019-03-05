@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 *
 */
-package com.android.internal.util.baikalos;
+package com.android.internal.util.cerberusos;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;

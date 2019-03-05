@@ -1191,14 +1191,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     UserHandle.USER_ALL);
 
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.Global.BAIKAL_LID_SENSOR_ENABLED), false, this,
+                    Settings.Global.CERBERUS_LID_SENSOR_ENABLED), false, this,
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.Global.BAIKAL_LID_SENSOR_REVERSE), false, this,
+                    Settings.Global.CERBERUS_LID_SENSOR_REVERSE), false, this,
                     UserHandle.USER_ALL);
 
             resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.Global.BAIKAL_LID_IGNORE_WAKE), false, this,
+                    Settings.Global.CERBERUS_LID_IGNORE_WAKE), false, this,
                     UserHandle.USER_ALL);
 
             updateSettings();
@@ -2980,13 +2980,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     UserHandle.USER_CURRENT) != 0;
 
             mLidEnabled = Settings.Global.getInt(resolver,
-                    Settings.Global.BAIKAL_LID_SENSOR_ENABLED, 0) == 1;
+                    Settings.Global.CERBERUS_LID_SENSOR_ENABLED, 0) == 1;
 
             mLidReversed = Settings.Global.getInt(resolver,
-                    Settings.Global.BAIKAL_LID_SENSOR_REVERSE, 0) == 1;
+                    Settings.Global.CERBERUS_LID_SENSOR_REVERSE, 0) == 1;
 
             mLidIgnore = Settings.Global.getInt(resolver,
-                    Settings.Global.BAIKAL_LID_IGNORE_WAKE, 0) == 1;
+                    Settings.Global.CERBERUS_LID_IGNORE_WAKE, 0) == 1;
 
             if (!mContext.getResources()
                     .getBoolean(com.android.internal.R.bool.config_volumeHushGestureEnabled)) {

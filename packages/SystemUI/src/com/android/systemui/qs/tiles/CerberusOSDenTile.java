@@ -24,7 +24,7 @@ import android.widget.Toast;
 
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
-import com.android.internal.util.baikalos.PackageUtils;
+import com.android.internal.util.cerberusos.PackageUtils;
 import com.android.systemui.Dependency;
 import com.android.systemui.R;
 import com.android.systemui.SysUIToast;
@@ -33,23 +33,23 @@ import com.android.systemui.plugins.qs.QSTile.BooleanState;
 import com.android.systemui.qs.QSHost;
 import com.android.systemui.qs.tileimpl.QSTileImpl;
 
-public class BaikalOSExtrasTile extends QSTileImpl<BooleanState> {
+public class CerberusOSDenTile extends QSTileImpl<BooleanState> {
     private boolean mListening;
     private final ActivityStarter mActivityStarter;
 
-    private static final String TAG = "BaikalOSExtrasTile";
+    private static final String TAG = "CerberusOSDenTile";
 
-    private static final String AE_PKG_NAME = "ru.baikalos.extras";
+    private static final String AE_PKG_NAME = "com.cerberusos.den";
     private static final String OTA_PKG_NAME = "ru.baikalos.updater";
 
-    private static final Intent BAIKALOS_EXTRAS = new Intent()
+    private static final Intent CERBERUSOS_DEN = new Intent()
         .setComponent(new ComponentName(AE_PKG_NAME,
-        "ru.baikalos.extras.SettingsActivity"));
+        "com.cerberusos.den.SettingsActivity"));
     private static final Intent OTA_INTENT = new Intent()
         .setComponent(new ComponentName(OTA_PKG_NAME,
         "ru.baikalos.updater.Settings"));
 
-    public BaikalOSExtrasTile(QSHost host) {
+    public CerberusOSDenTile(QSHost host) {
         super(host);
         mActivityStarter = Dependency.get(ActivityStarter.class);
     }
@@ -62,7 +62,7 @@ public class BaikalOSExtrasTile extends QSTileImpl<BooleanState> {
     @Override
     protected void handleClick() {
         mHost.collapsePanels();
-        startBaikalOSExtras();
+        startCerberusOSDen();
         refreshState();
     }
 
@@ -85,11 +85,11 @@ public class BaikalOSExtrasTile extends QSTileImpl<BooleanState> {
 
     @Override
     public CharSequence getTileLabel() {
-        return mContext.getString(R.string.quick_baikalos_extras_label);
+        return mContext.getString(R.string.quick_cerberusos_den_label);
     }
 
-    protected void startBaikalOSExtras() {
-        mActivityStarter.postStartActivityDismissingKeyguard(BAIKALOS_EXTRAS, 0);
+    protected void startCerberusOSDen() {
+        mActivityStarter.postStartActivityDismissingKeyguard(CERBERUSOS_DEN, 0);
     }
 
     protected void startBaikalOSOTA() {
@@ -98,7 +98,7 @@ public class BaikalOSExtrasTile extends QSTileImpl<BooleanState> {
 
     private void showNotSupportedToast(){
         SysUIToast.makeText(mContext, mContext.getString(
-                R.string.quick_baikalos_extras_toast),
+                R.string.quick_cerberusos_den_toast),
                 Toast.LENGTH_LONG).show();
     }
 
@@ -127,7 +127,7 @@ public class BaikalOSExtrasTile extends QSTileImpl<BooleanState> {
     @Override
     protected void handleUpdateState(BooleanState state, Object arg) {
         state.icon = ResourceIcon.get(R.drawable.ic_qs_baikalos_extras);
-        state.label = mContext.getString(R.string.quick_baikalos_extras_label);
+        state.label = mContext.getString(R.string.quick_cerberusos_den_label);
     }
 
     @Override

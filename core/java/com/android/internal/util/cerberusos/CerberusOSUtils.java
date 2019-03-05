@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 *
 */
-package com.android.internal.util.baikalos;
+package com.android.internal.util.cerberusos;
 
 import android.content.Context;
 import android.content.Intent;
@@ -34,7 +34,7 @@ import android.view.KeyEvent;
 import android.view.IWindowManager;
 import android.view.WindowManagerGlobal;
 
-public class BaikalOSUtils {
+public class CerberusOSUtils {
     /**
      * @hide
      */

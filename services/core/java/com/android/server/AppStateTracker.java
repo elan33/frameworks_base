@@ -59,7 +59,7 @@ import com.android.internal.util.Preconditions;
 import com.android.internal.util.StatLogger;
 import com.android.server.ForceAppStandbyTrackerProto.ExemptedPackage;
 import com.android.server.ForceAppStandbyTrackerProto.RunAnyInBackgroundRestrictedPackages;
-import com.android.server.am.BaikalService;
+import com.android.server.am.CerberusService;
 
 
 import java.io.PrintWriter;
@@ -94,7 +94,7 @@ public class AppStateTracker {
     PowerManagerInternal mPowerManagerInternal;
     StandbyTracker mStandbyTracker;
     UsageStatsManagerInternal mUsageStatsManagerInternal;
-    BaikalService mBaikalService;
+    CerberusService mCerberusService;
 
     private final MyHandler mHandler;
 
@@ -442,7 +442,7 @@ public class AppStateTracker {
             mStandbyTracker = new StandbyTracker();
             mUsageStatsManagerInternal.addAppIdleStateChangeListener(mStandbyTracker);
 
-            mBaikalService = LocalServices.getService(BaikalService.class);
+            mCerberusService = LocalServices.getService(CerberusService.class);
 
             try {
                 mIActivityManager.registerUidObserver(new UidObserver(),
@@ -482,9 +482,9 @@ public class AppStateTracker {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     synchronized (mLock) {
-                        if( mBaikalService != null ) {
-        	                mDeviceIdleMode = mBaikalService.isDeviceIdleMode();
-                            mAggressiveDeviceIdleMode = mBaikalService.isAggressiveDeviceIdleMode();
+                        if( mCerberusService != null ) {
+        	                mDeviceIdleMode = mCerberusService.isDeviceIdleMode();
+                            mAggressiveDeviceIdleMode = mCerberusService.isAggressiveDeviceIdleMode();
                             Slog.v(TAG, "DeviceIdleMode changed :" + mDeviceIdleMode + "/" + mAggressiveDeviceIdleMode);
                             updateForceAllAppStandbyState();
                         }

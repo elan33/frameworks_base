@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.android.internal.util.baikalos;
+package com.android.internal.util.cerberusos;
 
 import android.util.Log;
 

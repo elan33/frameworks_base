@@ -720,7 +720,7 @@ public class ActivityManagerService extends IActivityManager.Stub
     // VR Vr2d Display Id.
     int mVr2dDisplayId = INVALID_DISPLAY;
 
-    BaikalService mBaikalService;
+    CerberusService mCerberusService;
 
     // Whether we should use SCHED_FIFO for UI and RenderThreads.
     private boolean mUseFifoUiScheduling = false;
@@ -8031,8 +8031,8 @@ public class ActivityManagerService extends IActivityManager.Stub
             mCallFinishBooting = false;
         }
 
-        mBaikalService = LocalServices.getService(BaikalService.class);
-        mBaikalService.setActivityManagerService(this, mAppOpsService);
+        mCerberusService = LocalServices.getService(CerberusService.class);
+        mCerberusService.setActivityManagerService(this, mAppOpsService);
 
 
         ArraySet<String> completedIsas = new ArraySet<String>();
@@ -13213,12 +13213,12 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     boolean isBackgroundRestrictedNoCheck(final int uid, final String packageName) {
 
-        //if( mBaikalService == null ) {
+        //if( mCerberusService == null ) {
         //    final int mode = mAppOpsService.checkOperation(AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
         //        uid, packageName);
         //    return mode != AppOpsManager.MODE_ALLOWED;
         //}
-        //return mBaikalService.isAppRestricted(uid, packageName);
+        //return mCerberusService.isAppRestricted(uid, packageName);
         return false;
     }
 
@@ -25012,8 +25012,8 @@ public class ActivityManagerService extends IActivityManager.Stub
             uid = -1;
         }
 
-        if( mBaikalService != null ) {
-            mBaikalService.topAppChanged(act);
+        if( mCerberusService != null ) {
+            mCerberusService.topAppChanged(act);
         }
 
         // Has the UID or resumed package name changed?
@@ -25272,11 +25272,11 @@ public class ActivityManagerService extends IActivityManager.Stub
                 applyOomAdjLocked(app, true, now, nowElapsed);
 
                 boolean kill = false;
-                if( mBaikalService != null ) {
-                    kill = mBaikalService.killByOOM(app, TOP_APP, mHomeProcess, mPreviousProcess);
+                if( mCerberusService != null ) {
+                    kill = mCerberusService.killByOOM(app, TOP_APP, mHomeProcess, mPreviousProcess);
                 }
                 if( kill ) {
-                    app.kill("by baikalos service", true);
+                    app.kill("by cerberusos service", true);
                 } else {
 
                     // Count the number of process types.

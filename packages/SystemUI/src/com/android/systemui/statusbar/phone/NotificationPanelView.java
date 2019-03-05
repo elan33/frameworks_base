@@ -83,7 +83,7 @@ import com.android.systemui.statusbar.stack.AnimationProperties;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
 import com.android.systemui.statusbar.stack.StackStateAnimator;
 
-import com.android.internal.util.baikalos.BaikalOSUtils;
+import com.android.internal.util.cerberusos.CerberusOSUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -320,7 +320,7 @@ public class NotificationPanelView extends PanelView implements
                 new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onDoubleTap(MotionEvent e) {
-                BaikalOSUtils.goToSleep(context);
+                CerberusOSUtils.goToSleep(context);
                 return true;
             }
         });

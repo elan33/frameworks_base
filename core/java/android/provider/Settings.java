@@ -4123,12 +4123,12 @@ public final class Settings {
 
 
         /*****************************
-         * BAIKALOS System Settings start
+         * CERBERUSOS System Settings start
          *****************************/
 
 
         /**
-         * Theme of BaikalOSExtras.
+         * Theme of CERBERUSDEN.
          * @hide
          */
         public static final String AE_THEME = "ae_theme";
@@ -4433,7 +4433,7 @@ public final class Settings {
 
 
         /***************************
-         * BAIKALOS System Settings end
+         * CERBERUSOS System Settings end
          ***************************/
 
 
@@ -5104,7 +5104,7 @@ public final class Settings {
             NOTIFICATION_VIBRATION_INTENSITY,
             HAPTIC_FEEDBACK_INTENSITY,
             DISPLAY_COLOR_MODE,
-            // BAIKALOS Settings
+            // CERBERUSOS Settings
             AE_THEME,
             ENABLE_FORWARD_LOOKUP,
             ENABLE_PEOPLE_LOOKUP,
@@ -5158,7 +5158,7 @@ public final class Settings {
             SLIM_MEM_TEXT_COLOR,
             SLIM_RECENTS_CORNER_RADIUS,
             SLIM_RECENTS_BLACKLIST_VALUES,
-            // BAIKALOS Settings end
+            // CERBERUSOS Settings end
             NOTIFICATION_LIGHT_PULSE,
         };
 
@@ -5275,7 +5275,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(EGG_MODE);
             PRIVATE_SETTINGS.add(SHOW_BATTERY_PERCENT);
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_MODE);
-            // BAIKALOS Settings
+            // CERBERUSOS Settings
             PRIVATE_SETTINGS.add(AE_THEME);
             PRIVATE_SETTINGS.add(ENABLE_FORWARD_LOOKUP);
             PRIVATE_SETTINGS.add(ENABLE_PEOPLE_LOOKUP);
@@ -5348,11 +5348,11 @@ public final class Settings {
             PRIVATE_SETTINGS.add(SLIM_RECENTS_CORNER_RADIUS);
             PRIVATE_SETTINGS.add(SLIM_RECENTS_BLACKLIST_VALUES);
 
-            // BAIKALOS Settings end
+            // CERBERUSOS Settings end
         }
 
         /**
-         * These are all public system and private BaikalOS settings
+         * These are all public system and private CERBERUSOS settings
         }
 
         /**
@@ -5442,7 +5442,7 @@ public final class Settings {
             VALIDATORS.put(WIFI_STATIC_DNS1, WIFI_STATIC_DNS1_VALIDATOR);
             VALIDATORS.put(WIFI_STATIC_DNS2, WIFI_STATIC_DNS2_VALIDATOR);
             VALIDATORS.put(SHOW_BATTERY_PERCENT, SHOW_BATTERY_PERCENT_VALIDATOR);
-            // BAIKALOS Settings
+            // CERBERUSOS Settings
             VALIDATORS.put(AE_THEME, AE_THEME_VALIDATOR);
             VALIDATORS.put(ENABLE_FORWARD_LOOKUP, ENABLE_FORWARD_LOOKUP_VALIDATOR);
             VALIDATORS.put(ENABLE_PEOPLE_LOOKUP, ENABLE_PEOPLE_LOOKUP_VALIDATOR);
@@ -5490,7 +5490,7 @@ public final class Settings {
             VALIDATORS.put(BUTTON_BRIGHTNESS_ENABLED, BUTTON_BRIGHTNESS_ENABLED_VALIDATOR);
             VALIDATORS.put(BUTTON_TIMEOUT, BUTTON_TIMEOUT_VALIDATOR);
             VALIDATORS.put(OMNI_SHOW_BATTERY_IMAGE, OMNI_SHOW_BATTERY_IMAGE_VALIDATOR);
-            // BAIKALOS Settings end
+            // CERBERUSOS Settings end
             VALIDATORS.put(USE_SLIM_RECENTS, USE_SLIM_RECENTS_VALIDATOR);
             VALIDATORS.put(RECENTS_MAX_APPS, RECENTS_MAX_APPS_VALIDATOR);
             VALIDATORS.put(RECENT_PANEL_GRAVITY, RECENT_PANEL_GRAVITY_VALIDATOR);
@@ -5514,7 +5514,7 @@ public final class Settings {
             VALIDATORS.put(SLIM_MEM_TEXT_COLOR, SLIM_MEM_TEXT_COLOR_VALIDATOR);
             VALIDATORS.put(SLIM_RECENTS_CORNER_RADIUS, SLIM_RECENTS_CORNER_RADIUS_VALIDATOR);
             VALIDATORS.put(SLIM_RECENTS_BLACKLIST_VALUES, SLIM_RECENTS_BLACKLIST_VALUES_VALIDATOR);
-            // BAIKALOS Settings end
+            // CERBERUSOS Settings end
             VALIDATORS.put(NOTIFICATION_LIGHT_PULSE, BOOLEAN_VALIDATOR);
             VALIDATORS.put(NAVIGATION_BAR_ENABLED, NAVIGATION_BAR_ENABLED_VALIDATOR);
             VALIDATORS.put(BUTTON_BRIGHTNESS, BUTTON_BRIGHTNESS_VALIDATOR);
@@ -11789,7 +11789,7 @@ public final class Settings {
         public static final String DEVICE_IDLE_CONSTANTS = "device_idle_constants";
 
 
-        /* BaikalOS Settings */
+        /* CerberusOS Settings */
 
         /** @hide */
         public static final String DEVICE_IDLE_AGGRESSIVE_ENABLED = "device_idle_aggressive_enabled";
@@ -11848,47 +11848,47 @@ public final class Settings {
                 BOOLEAN_VALIDATOR;
 
         /** @hide */
-        public static final String BAIKAL_WAKEUP_PROXIMITY = "baikal_wakeup_proximity_enabled";
+        public static final String CERBERUS_WAKEUP_PROXIMITY = "cerberus_wakeup_proximity_enabled";
 
         /** @hide */
-        private static final Validator BAIKAL_WAKEUP_PROXIMITY_VALIDATOR =
+        private static final Validator CERBERUS_WAKEUP_PROXIMITY_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
 
         /** @hide */
-        public static final String BAIKAL_SLEEP_PROXIMITY = "baikal_sleep_proximity_enabled";
+        public static final String CERBERUS_SLEEP_PROXIMITY = "cerberus_sleep_proximity_enabled";
 
         /** @hide */
-        private static final Validator BAIKAL_SLEEP_PROXIMITY_VALIDATOR =
+        private static final Validator CERBERUS_SLEEP_PROXIMITY_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
         /** @hide */
-        public static final String BAIKAL_HALL_SENSOR = "baikal_hall_sensor_enabled";
+        public static final String CERBERUS_HALL_SENSOR = "cerberus_hall_sensor_enabled";
 
         /** @hide */
-        private static final Validator BAIKAL_HALL_SENSOR_VALIDATOR =
+        private static final Validator CERBERUS_HALL_SENSOR_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
 
         /** @hide */
-        public static final String BAIKAL_LID_SENSOR_ENABLED = "baikal_lid_sensor_enabled";
+        public static final String CERBERUS_LID_SENSOR_ENABLED = "cerberus_lid_sensor_enabled";
 
         /** @hide */
-        private static final Validator BAIKAL_LID_SENSOR_ENABLED_VALIDATOR =
+        private static final Validator CERBERUS_LID_SENSOR_ENABLED_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
         /** @hide */
-        public static final String BAIKAL_LID_SENSOR_REVERSE = "baikal_lid_sensor_reverse";
+        public static final String CERBERUS_LID_SENSOR_REVERSE = "cerberus_lid_sensor_reverse";
 
         /** @hide */
-        private static final Validator BAIKAL_LID_SENSOR_REVERSE_VALIDATOR =
+        private static final Validator CERBERUS_LID_SENSOR_REVERSE_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
         /** @hide */
-        public static final String BAIKAL_LID_IGNORE_WAKE = "baikal_lid_ignore_wake";
+        public static final String CERBERUS_LID_IGNORE_WAKE = "cerberus_lid_ignore_wake";
 
         /** @hide */
-        private static final Validator BAIKAL_LID_IGNORE_WAKE_VALIDATOR =
+        private static final Validator CERBERUS_LID_IGNORE_WAKE_VALIDATOR =
                 BOOLEAN_VALIDATOR;
 
 

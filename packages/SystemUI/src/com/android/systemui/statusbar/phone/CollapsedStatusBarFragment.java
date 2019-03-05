@@ -74,7 +74,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private DarkIconManager mDarkIconManager;
     private View mOperatorNameFrame;
 
-    // BAIKALOS additions
+    // CERBERUSOS additions
     private View mBatteryBar;
 
     private SignalCallback mSignalCallback = new SignalCallback() {
@@ -86,8 +86,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
 
     private final Handler mHandler = new Handler();
 
-    private class BaikalOSSettingsObserver extends ContentObserver {
-        BaikalOSSettingsObserver(Handler handler) {
+    private class CerberusOSSettingsObserver extends ContentObserver {
+        CerberusOSSettingsObserver(Handler handler) {
             super(handler);
         }
 
@@ -102,7 +102,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
             updateSettings(true);
         }
     }
-    private BaikalOSSettingsObserver mBaikalOSSettingsObserver;
+    private CerberusOSSettingsObserver mCerberusOSSettingsObserver;
 
     private int mTickerEnabled;
     private ContentResolver mContentResolver;
@@ -115,7 +115,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         mKeyguardMonitor = Dependency.get(KeyguardMonitor.class);
         mNetworkController = Dependency.get(NetworkController.class);
         mStatusBarComponent = SysUiServiceProvider.getComponent(getContext(), StatusBar.class);
-        mBaikalOSSettingsObserver = new BaikalOSSettingsObserver(mHandler);
+        mCerberusOSSettingsObserver = new CerberusOSSettingsObserver(mHandler);
     }
 
     @Override
@@ -142,7 +142,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         showClock(false);
         initEmergencyCryptkeeperText();
         initOperatorName();
-        mBaikalOSSettingsObserver.observe();
+        mCerberusOSSettingsObserver.observe();
         updateSettings(false);
     }
 

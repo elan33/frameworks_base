@@ -2,8 +2,8 @@
 <resources>
 
   <java-symbol type="array" name="config_blockPackagesSensorDrain" />
-  <java-symbol type="bool" name="config_useBaikal8996AudioHal" />
-  <java-symbol type="bool" name="config_useBaikalLeecoDevice" />
+  <java-symbol type="bool" name="config_useCerberus8996AudioHal" />
+  <java-symbol type="bool" name="config_useCerberusLeecoDevice" />
   <java-symbol type="bool" name="config_deviceHasHallSensor" />
   <java-symbol type="bool" name="config_deviceHasLidSensor" />
   <java-symbol type="bool" name="config_deviceHasVariableButtonBrightness" />

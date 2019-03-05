@@ -6117,8 +6117,8 @@ message MetricsEvent {
     // OS: P
     FIELD_AUTOFILL_SESSION_ID = 1456;
 
-    // ACTION: Custom BAIKALOS metrics
-    BAIKALOS_METRICS = 10000;
+    // ACTION: Custom CERBERUSOS metrics
+    CERBERUSOS_METRICS = 10000;
 
     CUSTOM_QUICK_TILES = 9001;
     // ---- End P Constants, all P constants go above this line ----

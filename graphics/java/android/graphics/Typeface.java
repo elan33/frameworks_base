@@ -1140,7 +1140,7 @@ public class Typeface {
 
         try {
 
-            boolean useGoogle = SystemProperties.get("persist.baikal.use_google_sans", "0").equals("1");
+            boolean useGoogle = SystemProperties.get("persist.cerberus.use_google_sans", "0").equals("1");
             if( useGoogle ) {
                 Typeface sGoogle = sSystemFontMap.get("google-sans");
                 if( sGoogle == null ) { 

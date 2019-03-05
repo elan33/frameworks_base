@@ -16,7 +16,7 @@
  *
  */
 
-package com.android.internal.util.baikalos;
+package com.android.internal.util.cerberusos;
 
 import android.app.Activity;
 import android.app.ActivityOptions;

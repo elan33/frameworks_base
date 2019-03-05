@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package com.android.internal.util.baikalos;
+package com.android.internal.util.cerberusos;
 
 import android.content.Context;
 import android.content.pm.PackageManager;

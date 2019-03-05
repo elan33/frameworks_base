@@ -23,7 +23,7 @@ import com.android.systemui.R;
 import com.android.systemui.plugins.qs.*;
 import com.android.systemui.plugins.qs.QSTileView;
 import com.android.systemui.qs.external.CustomTile;
-import com.android.systemui.qs.tiles.BaikalOSExtrasTile;
+import com.android.systemui.qs.tiles.CerberusOSDenTile;
 import com.android.systemui.qs.tiles.AdbOverNetworkTile;
 import com.android.systemui.qs.tiles.AirplaneModeTile;
 import com.android.systemui.qs.tiles.ANBITile;
@@ -113,9 +113,9 @@ public class QSFactoryImpl implements QSFactory {
                 return new NfcTile(mHost);
             case "heads_up":
                 return new HeadsUpTile(mHost);
-            // BaikalOS tiles
-            case "baikalos_extras":
-                return new BaikalOSExtrasTile(mHost);
+            // CerberusOS tiles
+            case "cerberusos_den":
+                return new CerberusOSDenTile(mHost);
             case "screenshot":
                 return new ScreenshotTile(mHost);
             case "usb_tether":

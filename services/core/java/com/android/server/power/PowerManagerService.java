@@ -107,7 +107,7 @@ import com.android.server.power.batterysaver.BatterySaverController;
 import com.android.server.power.batterysaver.BatterySaverStateMachine;
 import com.android.server.power.batterysaver.BatterySavingStats;
 import com.android.server.LocalServices;
-import com.android.server.am.BaikalService;
+import com.android.server.am.CerberusService;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -561,7 +561,7 @@ public final class PowerManagerService extends SystemService
     private boolean mUidsChanged;
     private QCNsrmPowerExtension qcNsrmPowExt;
 
-    private BaikalService mBaikalService;
+    private CerberusService mCerberusService;
 
     // True if theater mode is enabled
     private boolean mTheaterModeEnabled;
@@ -777,8 +777,8 @@ public final class PowerManagerService extends SystemService
             if (phase == PHASE_THIRD_PARTY_APPS_CAN_START) {
                 incrementBootCount();
             } else if (phase == PHASE_SYSTEM_SERVICES_READY) {
-                mBaikalService = LocalServices.getService(BaikalService.class);
-                mBaikalService.setPowerManagerService(this);
+                mCerberusService = LocalServices.getService(CerberusService.class);
+                mCerberusService.setPowerManagerService(this);
             } else if (phase == PHASE_BOOT_COMPLETED) {
                 final long now = SystemClock.uptimeMillis();
                 mBootCompleted = true;
@@ -1663,8 +1663,8 @@ public final class PowerManagerService extends SystemService
             }
             SystemPropertiesSet("power.wakefulness",Integer.toString(mWakefulness));
         
-            if( mBaikalService != null ) {
-                mBaikalService.setWakefulness(wakefulness,reason);
+            if( mCerberusService != null ) {
+                mCerberusService.setWakefulness(wakefulness,reason);
             }
         }
     }
@@ -2542,14 +2542,14 @@ public final class PowerManagerService extends SystemService
             } else if (isValidBrightness(mScreenBrightnessOverrideFromWindowManager)) {
                 autoBrightness = false;
                 screenBrightnessOverride = mScreenBrightnessOverrideFromWindowManager;
-            } else if (mBrightnessOverrideFromBaikalService == -2 ) {
+            } else if (mBrightnessOverrideFromCerberusService == -2 ) {
                 mDisplayPowerRequest.lowPowerMode = true;
                 autoBrightness = (mScreenBrightnessModeSetting ==
                         Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
                 screenBrightnessOverride = -1;
-            } else if ( mBrightnessOverrideFromBaikalService > 0 && isValidBrightness(mBrightnessOverrideFromBaikalService) ) {
+            } else if ( mBrightnessOverrideFromCerberusService > 0 && isValidBrightness(mBrightnessOverrideFromCerberusService) ) {
                 autoBrightness = false;
-                screenBrightnessOverride = mBrightnessOverrideFromBaikalService;
+                screenBrightnessOverride = mBrightnessOverrideFromCerberusService;
             } else {
                 autoBrightness = (mScreenBrightnessModeSetting ==
                         Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
@@ -2564,7 +2564,7 @@ public final class PowerManagerService extends SystemService
 
             updatePowerRequestFromBatterySaverPolicy(mDisplayPowerRequest);
 
-            if( mBrightnessOverrideFromBaikalService == -2 ) {
+            if( mBrightnessOverrideFromCerberusService == -2 ) {
                 mDisplayPowerRequest.lowPowerMode = true;
             }
 
@@ -2829,7 +2829,7 @@ public final class PowerManagerService extends SystemService
 
 
     boolean mReaderModeActive = false;
-    int mBrightnessOverrideFromBaikalService = -1;
+    int mBrightnessOverrideFromCerberusService = -1;
     long lastInteractiveHint = 0;
     long lastLaunchHint = 0;
     /**
@@ -2841,12 +2841,12 @@ public final class PowerManagerService extends SystemService
             return true;
         }
         if (mDisplayPowerRequest.isBrightOrDim()) {
-            if( mBaikalService != null ) {
-                boolean readerModeActive = mBaikalService.isReaderMode();
-                int brightnessOverrideFromBaikalService = mBaikalService.getBrightnessOverride();
-                if( brightnessOverrideFromBaikalService != mBrightnessOverrideFromBaikalService ) {
-                    Slog.d(TAG, "Brightnsess override changed to " + brightnessOverrideFromBaikalService);
-                    mBrightnessOverrideFromBaikalService = brightnessOverrideFromBaikalService;
+            if( mCerberusService != null ) {
+                boolean readerModeActive = mCerberusService.isReaderMode();
+                int brightnessOverrideFromCerberusService = mCerberusService.getBrightnessOverride();
+                if( brightnessOverrideFromCerberusService != mBrightnessOverrideFromCerberusService ) {
+                    Slog.d(TAG, "Brightnsess override changed to " + brightnessOverrideFromCerberusService);
+                    mBrightnessOverrideFromCerberusService = brightnessOverrideFromCerberusService;
                     updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
                 }
                 if( mReaderModeActive != readerModeActive ) {
@@ -3064,8 +3064,8 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setDeviceIdleModeInternal(boolean enabled) {
-        if( mBaikalService != null ) {
-            mBaikalService.setDeviceIdleMode(enabled);
+        if( mCerberusService != null ) {
+            mCerberusService.setDeviceIdleMode(enabled);
         }
         synchronized (mLock) {
             if (mDeviceIdleMode == enabled) {
@@ -3083,8 +3083,8 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setLightDeviceIdleModeInternal(boolean enabled) {
-        if( mBaikalService != null ) {
-            mBaikalService.setLightDeviceIdleMode(enabled);
+        if( mCerberusService != null ) {
+            mCerberusService.setLightDeviceIdleMode(enabled);
         }
         synchronized (mLock) {
             if (mLightDeviceIdleMode != enabled) {
@@ -3096,8 +3096,8 @@ public final class PowerManagerService extends SystemService
     }
 
     void setDeviceIdleWhitelistInternal(int[] appids) {
-        if( mBaikalService != null ) {
-            mBaikalService.setDeviceIdleWhitelist(appids);
+        if( mCerberusService != null ) {
+            mCerberusService.setDeviceIdleWhitelist(appids);
         }
         synchronized (mLock) {
             mDeviceIdleWhitelist = appids;
@@ -3108,8 +3108,8 @@ public final class PowerManagerService extends SystemService
     }
 
     void setDeviceIdleTempWhitelistInternal(int[] appids) {
-        if( mBaikalService != null ) {
-            mBaikalService.setDeviceIdleTempWhitelist(appids);
+        if( mCerberusService != null ) {
+            mCerberusService.setDeviceIdleTempWhitelist(appids);
         }
         synchronized (mLock) {
             mDeviceIdleTempWhitelist = appids;
@@ -3236,8 +3236,8 @@ public final class PowerManagerService extends SystemService
         if ((wakeLock.mFlags & PowerManager.WAKE_LOCK_LEVEL_MASK)
                 == PowerManager.PARTIAL_WAKE_LOCK) {
 
-            if( mBaikalService != null ) {
-                boolean [] retval = mBaikalService.setWakeLockDisabledState(wakeLock);
+            if( mCerberusService != null ) {
+                boolean [] retval = mCerberusService.setWakeLockDisabledState(wakeLock);
                 if( retval[0] ) {
                     return retval[1];
                 }

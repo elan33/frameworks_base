@@ -481,18 +481,18 @@ public final class ActiveServices {
                     r.appInfo.targetSdkVersion, callingPid, false, false, forcedStandby);
 
 
-            if( mAm.mBaikalService != null ) {
-                if( mAm.mBaikalService.isServiceWhitelisted(r, callingUid, callingPid, callingPackage, true) ) {
+            if( mAm.mCerberusService != null ) {
+                if( mAm.mCerberusService.isServiceWhitelisted(r, callingUid, callingPid, callingPackage, true) ) {
                     allowed = ActivityManager.APP_START_MODE_NORMAL;
-                } else if( mAm.mBaikalService.isServiceBlacklisted(r, callingUid, callingPid, callingPackage, true) ) {
+                } else if( mAm.mCerberusService.isServiceBlacklisted(r, callingUid, callingPid, callingPackage, true) ) {
                     allowed = ActivityManager.APP_START_MODE_DELAYED;
                 }
             }
 
             if (allowed != ActivityManager.APP_START_MODE_NORMAL) {
 
-                if( mAm.mBaikalService != null ) {
-                    mAm.mBaikalService.noteRestrictionStatistics(false, "service", callingPackage, callingUid , callingPid, 
+                if( mAm.mCerberusService != null ) {
+                    mAm.mCerberusService.noteRestrictionStatistics(false, "service", callingPackage, callingUid , callingPid, 
                             r.packageName,r.appInfo.uid, r.app != null? r.app.pid : -1, r.name.getClassName());
                 }
 
@@ -524,8 +524,8 @@ public final class ActiveServices {
                 return new ComponentName("?", "app is in background uid " + uidRec);
             }
         }  else {
-            if( mAm.mBaikalService != null ) {
-                mAm.mBaikalService.noteRestrictionStatistics(true, "service", callingPackage, callingUid , callingPid, 
+            if( mAm.mCerberusService != null ) {
+                mAm.mCerberusService.noteRestrictionStatistics(true, "service", callingPackage, callingUid , callingPid, 
                             r.packageName,r.appInfo.uid, r.app != null? r.app.uid : -1, r.name.getClassName());
             }
         }
@@ -788,18 +788,18 @@ public final class ActiveServices {
                     int allowed = mAm.getAppStartModeLocked(service.appInfo.uid, service.packageName,
                             service.appInfo.targetSdkVersion, -1, false, false, mAm.mDeviceIdleMode);
                             
-                    if( mAm.mBaikalService != null ) {
-                        if( mAm.mBaikalService.isServiceWhitelisted(service, uid, service.app!=null?service.app.pid : -1, service.packageName, false) ) {
+                    if( mAm.mCerberusService != null ) {
+                        if( mAm.mCerberusService.isServiceWhitelisted(service, uid, service.app!=null?service.app.pid : -1, service.packageName, false) ) {
                             allowed = ActivityManager.APP_START_MODE_NORMAL;
-                        } else if( mAm.mBaikalService.isServiceBlacklisted(service, uid, service.app!=null?service.app.pid : -1, service.packageName, false) ) {
+                        } else if( mAm.mCerberusService.isServiceBlacklisted(service, uid, service.app!=null?service.app.pid : -1, service.packageName, false) ) {
                             allowed = ActivityManager.APP_START_MODE_DELAYED;
                         }
                     }
 
                     if ( allowed != ActivityManager.APP_START_MODE_NORMAL ) {
 
-                        if( mAm.mBaikalService != null ) {
-                            mAm.mBaikalService.noteRestrictionStatistics(false, "service", "device_idle", -1 , -1, 
+                        if( mAm.mCerberusService != null ) {
+                            mAm.mCerberusService.noteRestrictionStatistics(false, "service", "device_idle", -1 , -1, 
                                 service.packageName,service.appInfo.uid, service.app != null? service.app.pid : -1, service.name.getClassName());
                         }
 

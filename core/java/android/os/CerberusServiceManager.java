@@ -28,8 +28,8 @@ import android.content.Context;
  * @hide
  */
 @TestApi
-@SystemService(Context.BAIKAL_SERVICE_CONTROLLER)
-public class BaikalServiceManager {
+@SystemService(Context.CERBERUS_SERVICE_CONTROLLER)
+public class CerberusServiceManager {
 
     public static final int PRIO_CRITICAL = 0;
     public static final int PRIO_SYSTEM = 1;
@@ -58,9 +58,9 @@ public class BaikalServiceManager {
     public static final int SCREEN_BRIGHTNESS_FULL = 11;
 
     private final Context mContext;
-    private final IBaikalServiceController mService;
+    private final ICerberusServiceController mService;
 
-    public BaikalServiceManager(@NonNull Context context, @NonNull IBaikalServiceController service) {
+    public CerberusServiceManager(@NonNull Context context, @NonNull ICerberusServiceController service) {
         mContext = context;
         mService = service;
     }

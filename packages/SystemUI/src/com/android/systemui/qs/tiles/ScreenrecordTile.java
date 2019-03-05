@@ -20,7 +20,7 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.service.quicksettings.Tile;
 import android.view.WindowManager;
-import com.android.internal.util.baikalos.BaikalOSUtils;
+import com.android.internal.util.cerberusos.CerberusOSUtils;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.systemui.qs.QSHost;
 import com.android.systemui.plugins.qs.QSTile.BooleanState;
@@ -34,7 +34,7 @@ public class ScreenrecordTile extends QSTileImpl<BooleanState> {
     }
      @Override
     public int getMetricsCategory() {
-        return MetricsEvent.BAIKALOS_METRICS;
+        return MetricsEvent.CERBERUSOS_METRICS;
     }
      @Override
     public BooleanState newTileState() {
@@ -44,7 +44,7 @@ public class ScreenrecordTile extends QSTileImpl<BooleanState> {
     public void handleSetListening(boolean listening) {}
      @Override
     public boolean isAvailable() {
-        return BaikalOSUtils.isAvailableApp(OMNIRECORD_PACKAGE_NAME, mContext);
+        return CerberusOSUtils.isAvailableApp(OMNIRECORD_PACKAGE_NAME, mContext);
     }
      @Override
     public void handleClick() {

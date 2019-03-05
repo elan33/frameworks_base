@@ -40,7 +40,7 @@ import android.widget.RelativeLayout;
 import com.android.systemui.Dependency;
 import com.android.systemui.statusbar.policy.DarkIconDispatcher.DarkReceiver;
 
-import ru.baikalos.gear.util.BaikalOSUtils;
+import com.cerberusos.gear.util.CerberusOSUtils;
 
 public class BatteryBar extends RelativeLayout implements Animatable, DarkReceiver {
 
@@ -335,10 +335,10 @@ public class BatteryBar extends RelativeLayout implements Animatable, DarkReceiv
             return isDark ? mChargingDarkColor : mChargingColor;
         } else {
             if (isDark) {
-                return BaikalOSUtils.getBlendColorForPercent(mDarkColor, mBatteryLowDarkColor,
+                return CerberusOSUtils.getBlendColorForPercent(mDarkColor, mBatteryLowDarkColor,
                         mBlendDarkColorsReversed, percentage);
             } else {
-                return BaikalOSUtils.getBlendColorForPercent(mColor, mBatteryLowColor,
+                return CerberusOSUtils.getBlendColorForPercent(mColor, mBatteryLowColor,
                         mBlendColorsReversed, percentage);
             }
         }

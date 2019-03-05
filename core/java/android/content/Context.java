@@ -4219,11 +4219,11 @@ public abstract class Context {
     public static final String SECURE_ELEMENT_SERVICE = "secure_element";
 
     /**
-     * System service name for the BaikalService.
+     * System service name for the CerberusService.
      * @see #getSystemService(String)
      * @hide
      */
-    public static final String BAIKAL_SERVICE_CONTROLLER = "baikalservice";
+    public static final String CERBERUS_SERVICE_CONTROLLER = "cerberusservice";
 
 
     /**

@@ -86,7 +86,7 @@ import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.Preconditions;
 import com.android.internal.util.XmlUtils;
 import com.android.server.am.BatteryStatsService;
-import com.android.server.am.BaikalService;
+import com.android.server.am.CerberusService;
 import com.android.server.net.NetworkPolicyManagerInternal;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -122,7 +122,7 @@ public class DeviceIdleController extends SystemService
     private ActivityManagerInternal mLocalActivityManager;
     private PowerManagerInternal mLocalPowerManager;
     private PowerManager mPowerManager;
-    private BaikalService mBaikalService;
+    private CerberusService mCerberusService;
     private ConnectivityService mConnectivityService;
     private INetworkPolicyManager mNetworkPolicyManager;
     private SensorManager mSensorManager;
@@ -1579,8 +1579,8 @@ public class DeviceIdleController extends SystemService
                         (PowerManager) getContext().getSystemService(Context.POWER_SERVICE),
                         mHandler, mSensorManager, this, angleThreshold);
 
-                mBaikalService = LocalServices.getService(BaikalService.class);
-                mBaikalService.setDeviceIdleController(this);
+                mCerberusService = LocalServices.getService(CerberusService.class);
+                mCerberusService.setDeviceIdleController(this);
 
 
                 mAppStateTracker.onSystemServicesReady();
@@ -1937,7 +1937,7 @@ public class DeviceIdleController extends SystemService
         boolean informWhitelistChanged = false;
         synchronized (this) {
             int callingAppId = UserHandle.getAppId(callingUid);
-            if (callingAppId >= Process.FIRST_APPLICATION_UID && !BaikalService.isGmsAppid(callingAppId)) {
+            if (callingAppId >= Process.FIRST_APPLICATION_UID && !CerberusService.isGmsAppid(callingAppId)) {
                 if (!mPowerSaveWhitelistSystemAppIds.get(callingAppId)) {
                     throw new SecurityException("Calling app " + UserHandle.formatUid(callingUid)
                             + " is not on whitelist");

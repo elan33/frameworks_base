@@ -106,13 +106,13 @@ import android.os.BatteryManager;
 import android.os.BatteryStats;
 import android.os.Build;
 import android.os.DeviceIdleManager;
-import android.os.BaikalServiceManager;
+import android.os.CerberusServiceManager;
 import android.os.DropBoxManager;
 import android.os.HardwarePropertiesManager;
 import android.os.IBatteryPropertiesRegistrar;
 import android.os.IBinder;
 import android.os.IDeviceIdleController;
-import android.os.IBaikalServiceController;
+import android.os.ICerberusServiceController;
 import android.os.IHardwarePropertiesManager;
 import android.os.IPowerManager;
 import android.os.IRecoverySystem;
@@ -1000,15 +1000,15 @@ final class SystemServiceRegistry {
                         return new DeviceIdleManager(ctx.getOuterContext(), service);
                     }});
 
-        registerService(Context.BAIKAL_SERVICE_CONTROLLER, BaikalServiceManager.class,
-                new CachedServiceFetcher<BaikalServiceManager>() {
+        registerService(Context.CERBERUS_SERVICE_CONTROLLER, CerberusServiceManager.class,
+                new CachedServiceFetcher<CerberusServiceManager>() {
                     @Override
-                    public BaikalServiceManager createService(ContextImpl ctx)
+                    public CerberusServiceManager createService(ContextImpl ctx)
                             throws ServiceNotFoundException {
-                        IBaikalServiceController service = IBaikalServiceController.Stub.asInterface(
+                        ICerberusServiceController service = ICerberusServiceController.Stub.asInterface(
                                 ServiceManager.getServiceOrThrow(
-                                        Context.BAIKAL_SERVICE_CONTROLLER));
-                        return new BaikalServiceManager(ctx.getOuterContext(), service);
+                                        Context.CERBERUS_SERVICE_CONTROLLER));
+                        return new CerberusServiceManager(ctx.getOuterContext(), service);
                     }});
 
     }

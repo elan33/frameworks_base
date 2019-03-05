@@ -54,7 +54,7 @@ import android.util.MathUtils;
 import android.util.Slog;
 import android.util.TimeUtils;
 import android.view.Display;
-import com.android.server.am.BaikalService;
+import com.android.server.am.CerberusService;
 
 import java.io.PrintWriter;
 
@@ -372,7 +372,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
     static final int SCREEN_OFF_CRT = 1;
     static final int SCREEN_OFF_SCALE = 2;
 
-    private BaikalService mBaikalService;
+    private CerberusService mCerberusService;
 
     /**
      * Creates the display power controller.
@@ -653,7 +653,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
         mPowerState = new DisplayPowerState(mBlanker, mScreenOffAnimation);
 
-        mBaikalService = LocalServices.getService(BaikalService.class);
+        mCerberusService = LocalServices.getService(CerberusService.class);
 
         if (mColorFadeEnabled) {
             mColorFadeOnAnimator = ObjectAnimator.ofFloat(
@@ -964,8 +964,8 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
 /*
         boolean readerMode = false;
-        if( mBaikalService != null ) {
-            readerMode = mBaikalService.isReaderMode();
+        if( mCerberusService != null ) {
+            readerMode = mCerberusService.isReaderMode();
             if( readerMode ) {
                 final int readerBrightness = (int) (brightness * 0.5);
                 brightness = Math.max(readerBrightness, mScreenBrightnessRangeMinimum);

@@ -44,8 +44,8 @@ import android.os.PowerManagerInternal;
 import android.os.UserHandle;
 import android.os.Process;
 import android.os.SystemClock;
-import android.os.IBaikalServiceController;
-import android.os.BaikalServiceManager;
+import android.os.ICerberusServiceController;
+import android.os.CerberusServiceManager;
 import android.util.Slog;
 import android.util.ArrayMap;
 import android.net.NetworkInfo;
@@ -129,9 +129,9 @@ import android.provider.Settings;
 import java.util.List;
 
 
-public class BaikalService extends SystemService {
+public class CerberusService extends SystemService {
 
-    private static final String TAG = "BaikalService";
+    private static final String TAG = "CerberusService";
 
     private static final boolean DEBUG = false;
     private static final boolean DEBUG_PROFILE = DEBUG | true;
@@ -240,18 +240,18 @@ public class BaikalService extends SystemService {
 
     final ArrayMap<String, RestrictionStatistics> mRestrictionStatistics = new ArrayMap<String, RestrictionStatistics>();
 
-    public BaikalService(Context context) {
+    public CerberusService(Context context) {
         super(context);
         mContext = context;
         if( DEBUG ) {
-            Slog.i(TAG,"BaikalService()");
+            Slog.i(TAG,"CerberusService()");
         }
 
         mHandlerThread = new MyHandlerThread();
         mHandlerThread.start();
         mHandler = new MyHandler(mHandlerThread.getLooper());
 
-        mAppsConfigFile = new AtomicFile(new File(getSystemDir(), "baikal_service_apps.xml"));
+        mAppsConfigFile = new AtomicFile(new File(getSystemDir(), "cerberus_service_apps.xml"));
 
     }
 
@@ -261,8 +261,8 @@ public class BaikalService extends SystemService {
             Slog.i(TAG,"onStart()");
         }
         mBinderService = new BinderService();
-        publishBinderService(Context.BAIKAL_SERVICE_CONTROLLER, mBinderService);
-        publishLocalService(BaikalService.class, this);
+        publishBinderService(Context.CERBERUS_SERVICE_CONTROLLER, mBinderService);
+        publishLocalService(CerberusService.class, this);
 
         readConfigFileLocked();
     }
@@ -290,7 +290,7 @@ public class BaikalService extends SystemService {
                 Slog.i(TAG,"SensorManager initialized");
     
                 mPowerManager = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
-                mProximityWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "*baikal_proximity*");
+                mProximityWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "*cerberus_proximity*");
 
 
                 mProximityService = new ProximityService();
@@ -430,15 +430,15 @@ public class BaikalService extends SystemService {
                     false, this);
 
             resolver.registerContentObserver(
-                    Settings.Global.getUriFor(Settings.Global.BAIKAL_WAKEUP_PROXIMITY),
+                    Settings.Global.getUriFor(Settings.Global.CERBERUS_WAKEUP_PROXIMITY),
                     false, this);
 
             resolver.registerContentObserver(
-                    Settings.Global.getUriFor(Settings.Global.BAIKAL_SLEEP_PROXIMITY),
+                    Settings.Global.getUriFor(Settings.Global.CERBERUS_SLEEP_PROXIMITY),
                     false, this);
 
             resolver.registerContentObserver(
-                    Settings.Global.getUriFor(Settings.Global.BAIKAL_HALL_SENSOR),
+                    Settings.Global.getUriFor(Settings.Global.CERBERUS_HALL_SENSOR),
                     false, this);
 
             } catch( Exception e ) {
@@ -453,7 +453,7 @@ public class BaikalService extends SystemService {
         }
 
         private void updateConstants() {
-            synchronized (BaikalService.this) {
+            synchronized (CerberusService.this) {
                 updateConstantsLocked();
             }
         }
@@ -488,13 +488,13 @@ public class BaikalService extends SystemService {
                         Settings.Global.POWERSAVE_RESTRICT_SCREEN_ON) == 1;
 
                 mProximityServiceWakeupEnabled = Settings.Global.getInt(mResolver, 
-                        Settings.Global.BAIKAL_WAKEUP_PROXIMITY) == 1;
+                        Settings.Global.CERBERUS_WAKEUP_PROXIMITY) == 1;
 
                 mProximityServiceSleepEnabled = Settings.Global.getInt(mResolver, 
-                        Settings.Global.BAIKAL_SLEEP_PROXIMITY) == 1;
+                        Settings.Global.CERBERUS_SLEEP_PROXIMITY) == 1;
 
                 mHallSensorServiceEnabled = Settings.Global.getInt(mResolver, 
-                        Settings.Global.BAIKAL_HALL_SENSOR) == 1;
+                        Settings.Global.CERBERUS_HALL_SENSOR) == 1;
 
 
                 if( mProximityService != null ) {
@@ -510,7 +510,7 @@ public class BaikalService extends SystemService {
             } catch (Exception e) {
                     // Failed to parse the settings string, log this and move on
                     // with defaults.
-                Slog.e(TAG, "Bad BaikalService settings", e);
+                Slog.e(TAG, "Bad CerberusService settings", e);
             }
 
             Slog.d(TAG, "updateConstantsLocked: mTorchLongPressPowerEnabled=" + mTorchLongPressPowerEnabled +
@@ -851,7 +851,7 @@ public class BaikalService extends SystemService {
                     } catch( Exception e ) {
                     }
 
-                    synchronized(BaikalService.this) {
+                    synchronized(CerberusService.this) {
                         if( !mActiveIncomingCall ) {
                             mTorchThread = null;
                             return;
@@ -1579,7 +1579,7 @@ public class BaikalService extends SystemService {
                 mCurrentPerformanceProfile = profile;
 
                 
-                //SystemPropertiesSet("baikal.perf.profile",profile);
+                //SystemPropertiesSet("cerberus.perf.profile",profile);
                 setPerformanceProfileInternal(profile);
             } else {
                 if( DEBUG_PROFILE ) {
@@ -1606,40 +1606,40 @@ public class BaikalService extends SystemService {
 
     void setBrightnessOverrideLocked(int brightness) {
     switch( brightness ) {
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_DEFAULT:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_DEFAULT:
             mBrightnessOverride = -1;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_AUTO_LOW:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_AUTO_LOW:
             mBrightnessOverride = -2;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_FULL:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_FULL:
             mBrightnessOverride = PowerManager.BRIGHTNESS_ON;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_10:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_10:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 3)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_20:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_20:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 4)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_30:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_30:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 6)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_40:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_40:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 8)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_50:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_50:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 10)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_60:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_60:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 20)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_70:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_70:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 35)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_80:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_80:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 60)/100;
             break;
-        case BaikalServiceManager.SCREEN_BRIGHTNESS_90:
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_90:
             mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 100)/100;
             break;
         default:
@@ -1658,8 +1658,8 @@ public class BaikalService extends SystemService {
         synchronized(mCurrentThermalProfile) {
             if ( !mCurrentThermalProfile.equals(profile) ) {
                 mCurrentThermalProfile = profile;
-                SystemPropertiesSet("baikal.therm.profile","");
-                SystemPropertiesSet("baikal.therm.profile",profile);
+                SystemPropertiesSet("cerberus.therm.profile","");
+                SystemPropertiesSet("cerberus.therm.profile",profile);
             } else {
                 if( DEBUG_PROFILE ) {
                     Slog.i(TAG,"setThermalProfile: ignore already active profile=" + profile);
@@ -1671,19 +1671,19 @@ public class BaikalService extends SystemService {
 
     private void setPerformanceProfileInternal(String profile)
     {
-        if( isBaikalPerformanceProfiles() ) {
+        if( isCerberusPerformanceProfiles() ) {
             if( DEBUG_PROFILE ) {
-                Slog.i(TAG,"setPerformanceProfileInternal: set baikal profile=" + profile);
+                Slog.i(TAG,"setPerformanceProfileInternal: set cerberus profile=" + profile);
             }   
-            SystemPropertiesSet("baikal.perf.profile","");
-            SystemPropertiesSet("baikal.perf.profile",profile);
+            SystemPropertiesSet("cerberus.perf.profile","");
+            SystemPropertiesSet("cerberus.perf.profile",profile);
         } 
         else if( isSpectrumProfiles() ) {
             if( DEBUG_PROFILE ) {
                 Slog.i(TAG,"setPerformanceProfileInternal: set spectrum profile=" + profile);
             }   
-            SystemPropertiesSet("baikal.perf.profile","");
-            SystemPropertiesSet("persist.spectrum.profile",mapBaikalToSpectrumProfile(profile, true));
+            SystemPropertiesSet("cerberus.perf.profile","");
+            SystemPropertiesSet("persist.spectrum.profile",mapCerberusToSpectrumProfile(profile, true));
         }
         else {
             if( DEBUG_PROFILE ) {
@@ -1692,15 +1692,15 @@ public class BaikalService extends SystemService {
         }
     }
 
-    private boolean isBaikalPerformanceProfiles() {
-        return (SystemProperties.get("baikal.eng.perf","0")).equals("1");
+    private boolean isCerberusPerformanceProfiles() {
+        return (SystemProperties.get("cerberus.eng.perf","0")).equals("1");
     }
 
     private boolean isSpectrumProfiles() {
         return (SystemProperties.get("spectrum.support","0")).equals("1");
     }
 
-    private String mapBaikalToSpectrumProfile(String profile, boolean defmap) {
+    private String mapCerberusToSpectrumProfile(String profile, boolean defmap) {
 
         Slog.i(TAG,"spectrum: profile=" + profile);
         if(profile.equals("balance")) {
@@ -1715,7 +1715,7 @@ public class BaikalService extends SystemService {
                 return "2";
         } else {
             if( defmap ) {
-                return mapBaikalToSpectrumProfile(SystemProperties.get("persist.baikal.perf.default","balance"), false);
+                return mapCerberusToSpectrumProfile(SystemProperties.get("persist.cerberus.perf.default","balance"), false);
             } else {
                 return "0";
             }
@@ -1894,23 +1894,23 @@ public class BaikalService extends SystemService {
     }
 
     public String getDefaultPerfProfileInternal() {
-        return SystemProperties.get("persist.baikal.perf.default","balance");
+        return SystemProperties.get("persist.cerberus.perf.default","balance");
     }
 
     public void setDefaultPerfProfileInternal(String profile) {
-        SystemPropertiesSet("persist.baikal.perf.default",profile);
-        SystemPropertiesSet("baikal.perf.profile","");
-        SystemPropertiesSet("baikal.perf.profile",mCurrentPerformanceProfile);
+        SystemPropertiesSet("persist.cerberus.perf.default",profile);
+        SystemPropertiesSet("cerberus.perf.profile","");
+        SystemPropertiesSet("cerberus.perf.profile",mCurrentPerformanceProfile);
     }
 
     public String getDefaultThermProfileInternal() {
-        return SystemProperties.get("persist.baikal.therm.default","balance");
+        return SystemProperties.get("persist.cerberus.therm.default","balance");
     }
 
     public void setDefaultThermProfileInternal(String profile) {
-        SystemPropertiesSet("persist.baikal.therm.default",profile);
-        SystemPropertiesSet("baikal.therm.profile","");
-        SystemPropertiesSet("baikal.therm.profile",mCurrentThermalProfile);
+        SystemPropertiesSet("persist.cerberus.therm.default",profile);
+        SystemPropertiesSet("cerberus.therm.profile","");
+        SystemPropertiesSet("cerberus.therm.profile",mCurrentThermalProfile);
     }
 
 
@@ -2390,14 +2390,14 @@ public class BaikalService extends SystemService {
         Handler handler;
 
         public MyHandlerThread() {
-            super("baikal.handler", android.os.Process.THREAD_PRIORITY_FOREGROUND);
+            super("cerberus.handler", android.os.Process.THREAD_PRIORITY_FOREGROUND);
         }
     }
 
 
     BinderService mBinderService;
 
-    private final class BinderService extends IBaikalServiceController.Stub {
+    private final class BinderService extends ICerberusServiceController.Stub {
 
         @Override public String getAppPerfProfile(String packageName) {
             long ident = Binder.clearCallingIdentity();

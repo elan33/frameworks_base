@@ -20,7 +20,7 @@ import android.os.UserHandle;
 
 
 /** @hide */
-interface IBaikalServiceController {
+interface ICerberusServiceController {
     String getAppPerfProfile(String packageName);
     String getAppThermProfile(String packageName);
     void setAppPerfProfile(String packageName, String profile);

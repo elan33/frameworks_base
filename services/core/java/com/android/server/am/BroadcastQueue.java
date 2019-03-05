@@ -867,17 +867,17 @@ public final class BroadcastQueue {
 
                 int allowed = ActivityManager.APP_START_MODE_NORMAL;
 
-                if( mService.mBaikalService != null ) {
-                    if( mService.mBaikalService.isBroadcastFilterWhitelisted(r, (BroadcastFilter)target) ) {
+                if( mService.mCerberusService != null ) {
+                    if( mService.mCerberusService.isBroadcastFilterWhitelisted(r, (BroadcastFilter)target) ) {
                         allowed = ActivityManager.APP_START_MODE_NORMAL;
-                    } else if( mService.mBaikalService.isBroadcastFilterBlacklisted(r, (BroadcastFilter)target) ) {
+                    } else if( mService.mCerberusService.isBroadcastFilterBlacklisted(r, (BroadcastFilter)target) ) {
                         allowed = ActivityManager.APP_START_MODE_DELAYED;
                     }
                 }
 
-                if( mService.mBaikalService != null ) {
+                if( mService.mCerberusService != null ) {
                     BroadcastFilter filter = (BroadcastFilter)target;
-                    mService.mBaikalService.noteRestrictionStatistics(true, "broadcast_filter", r.callerPackage, r.callingUid , r.callingPid, 
+                    mService.mCerberusService.noteRestrictionStatistics(true, "broadcast_filter", r.callerPackage, r.callingUid , r.callingPid, 
                             filter.packageName,filter.owningUid, -1, r.intent.toString());
                 }
 
@@ -1283,10 +1283,10 @@ public final class BroadcastQueue {
                     info.activityInfo.applicationInfo.uid, info.activityInfo.packageName,
                     info.activityInfo.applicationInfo.targetSdkVersion, -1, true, false, mService.mDeviceIdleMode);
 
-            if( mService.mBaikalService != null ) {
-                if( mService.mBaikalService.isBroadcastWhitelisted(r, info) ) {
+            if( mService.mCerberusService != null ) {
+                if( mService.mCerberusService.isBroadcastWhitelisted(r, info) ) {
                     allowed = ActivityManager.APP_START_MODE_NORMAL;
-                } else if( mService.mBaikalService.isBroadcastBlacklisted(r, info) ) {
+                } else if( mService.mCerberusService.isBroadcastBlacklisted(r, info) ) {
                     allowed = ActivityManager.APP_START_MODE_DELAYED;
                 }
             }
@@ -1322,12 +1322,12 @@ public final class BroadcastQueue {
                     skip = true;
                 }
             }
-            if( mService.mBaikalService != null ) {
+            if( mService.mCerberusService != null ) {
                 if( skip ) {
-                   mService.mBaikalService.noteRestrictionStatistics(false, "broadcast", r.callerPackage, r.callingUid , r.callingPid, 
+                   mService.mCerberusService.noteRestrictionStatistics(false, "broadcast", r.callerPackage, r.callingUid , r.callingPid, 
                             info.activityInfo.packageName,info.activityInfo.applicationInfo.uid, -1, r.intent.toString());
                 } else {
-                    mService.mBaikalService.noteRestrictionStatistics(true, "broadcast", r.callerPackage, r.callingUid , r.callingPid, 
+                    mService.mCerberusService.noteRestrictionStatistics(true, "broadcast", r.callerPackage, r.callingUid , r.callingPid, 
                             info.activityInfo.packageName,info.activityInfo.applicationInfo.uid, -1, r.intent.toString());
                 }
             }

@@ -1577,7 +1577,7 @@ public class AppOpsService extends IAppOpsService.Stub {
                 return AppOpsManager.MODE_IGNORED;
             }
             if( code == AppOpsManager.OP_RUN_ANY_IN_BACKGROUND || code == AppOpsManager.OP_RUN_IN_BACKGROUND ) {
-                Slog.w(TAG,"BaikalService: RUN_*_IN_BACKGROUND for " + packageName + " here:", new Throwable());
+                Slog.w(TAG,"CerberusService: RUN_*_IN_BACKGROUND for " + packageName + " here:", new Throwable());
             }
             final UidState uidState = ops.uidState;
             if (op.duration == -1) {

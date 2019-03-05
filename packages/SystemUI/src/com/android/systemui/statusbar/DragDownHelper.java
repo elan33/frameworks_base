@@ -32,7 +32,7 @@ import com.android.systemui.Interpolators;
 import com.android.systemui.R;
 import com.android.systemui.classifier.FalsingManager;
 import com.android.systemui.statusbar.phone.StatusBar;
-import com.android.internal.util.baikalos.BaikalOSUtils;
+import com.android.internal.util.cerberusos.CerberusOSUtils;
 
 /**
  * A utility class to enable the downward swipe on the lockscreen to go to the full shade and expand
@@ -83,7 +83,7 @@ public class DragDownHelper implements Gefingerpoken {
         mGoToSleep = new Runnable() {
             @Override
             public void run() {
-                BaikalOSUtils.goToSleep(context);
+                CerberusOSUtils.goToSleep(context);
             }
         };
     }
