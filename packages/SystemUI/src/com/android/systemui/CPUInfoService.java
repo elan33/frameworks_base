@@ -246,6 +246,7 @@ public class CPUInfoService extends Service {
         private static final String CURRENT_CPU = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
         private static final String CPU_ROOT = "/sys/devices/system/cpu/cpu";
         private static final String CPU_CUR_TAIL = "/cpufreq/scaling_cur_freq";
+        private static final String CPU_ISO_TAIL = "/isolate";
         private static final String CPU_GOV_TAIL = "/cpufreq/scaling_governor";
 
         public CurCPUThread(Handler handler, int numCpus){
@@ -272,10 +273,16 @@ public class CPUInfoService extends Service {
                         String currFreq = CPUInfoService.readOneLine(freqFile);
                         final String govFile=CPU_ROOT+i+CPU_GOV_TAIL;
                         String currGov = CPUInfoService.readOneLine(govFile);
+                        final String isoFile=CPU_ROOT+i+CPU_ISO_TAIL;
+                        String currIso = CPUInfoService.readOneLine(isoFile);
 
                         if(currFreq==null){
                             currFreq="0";
-                            currGov="";
+                            currGov="offline";
+                        }
+                        if( currIso != null && currIso.equals("1") ){
+                            currFreq="0";
+                            currGov="isolated";
                         }
 
                         sb.append(currFreq+":"+currGov+"|");
