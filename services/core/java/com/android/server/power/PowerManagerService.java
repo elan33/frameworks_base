@@ -2542,7 +2542,7 @@ public final class PowerManagerService extends SystemService
             } else if (isValidBrightness(mScreenBrightnessOverrideFromWindowManager)) {
                 autoBrightness = false;
                 screenBrightnessOverride = mScreenBrightnessOverrideFromWindowManager;
-            } else if (mBrightnessOverrideFromCerberusService == -2 ) {
+            } else if (mBrightnessOverrideFromCerberusService <= -2 ) {
                 mDisplayPowerRequest.lowPowerMode = true;
                 autoBrightness = (mScreenBrightnessModeSetting ==
                         Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC);
@@ -2564,7 +2564,14 @@ public final class PowerManagerService extends SystemService
 
             updatePowerRequestFromBatterySaverPolicy(mDisplayPowerRequest);
 
+
             if( mBrightnessOverrideFromCerberusService == -2 ) {
+                mDisplayPowerRequest.screenLowPowerBrightnessFactor = 0.5f;
+                mDisplayPowerRequest.lowPowerMode = true;
+            }
+
+            if( mBrightnessOverrideFromCerberusService == -3 ) {
+                mDisplayPowerRequest.screenLowPowerBrightnessFactor = 0.25f;
                 mDisplayPowerRequest.lowPowerMode = true;
             }
 
@@ -3426,7 +3433,7 @@ public final class PowerManagerService extends SystemService
                 scheduleUpdatePowerState();
                 break;
             case PowerHint.LAUNCH: // 1: activate launch boost 0: deactivate.
-                if (data == 1 && mBatterySaverController.isLaunchBoostDisabled()) {
+                if (data == 1) {
                     lastLaunchHint = SystemClock.elapsedRealtime();
                     scheduleUpdatePowerState();
                     return;

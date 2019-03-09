@@ -56,6 +56,7 @@ public class CerberusServiceManager {
     public static final int SCREEN_BRIGHTNESS_90 = 9;
     public static final int SCREEN_BRIGHTNESS_AUTO_LOW = 10;
     public static final int SCREEN_BRIGHTNESS_FULL = 11;
+    public static final int SCREEN_BRIGHTNESS_AUTO_QUARTER = 12;
 
     public static final int OP_CAMERA_HAL1 = 1;
 

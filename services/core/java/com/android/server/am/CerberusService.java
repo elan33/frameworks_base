@@ -1612,35 +1612,38 @@ public class CerberusService extends SystemService {
         case CerberusServiceManager.SCREEN_BRIGHTNESS_AUTO_LOW:
             mBrightnessOverride = -2;
             break;
+        case CerberusServiceManager.SCREEN_BRIGHTNESS_AUTO_QUARTER:
+            mBrightnessOverride = -3;
+            break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_FULL:
             mBrightnessOverride = PowerManager.BRIGHTNESS_ON;
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_10:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 3)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 2)/100;// 3
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_20:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 4)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 3)/100;// 4
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_30:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 6)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 4)/100;// 6
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_40:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 8)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 6)/100;// 8
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_50:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 10)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 8)/100;// 10
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_60:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 20)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 15)/100;// 20
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_70:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 35)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 30)/100;// 35
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_80:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 60)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 60)/100;// 60
             break;
         case CerberusServiceManager.SCREEN_BRIGHTNESS_90:
-            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 100)/100;
+            mBrightnessOverride = (PowerManager.BRIGHTNESS_ON * 100)/100;// 100
             break;
         default:
             mBrightnessOverride = -1;
