@@ -26,6 +26,7 @@ import com.android.systemui.qs.external.CustomTile;
 import com.android.systemui.qs.tiles.CerberusOSDenTile;
 import com.android.systemui.qs.tiles.AdbOverNetworkTile;
 import com.android.systemui.qs.tiles.AirplaneModeTile;
+import com.android.systemui.qs.tiles.AODTile;
 import com.android.systemui.qs.tiles.ANBITile;
 import com.android.systemui.qs.tiles.BatterySaverTile;
 import com.android.systemui.qs.tiles.BluetoothTile;
@@ -138,6 +139,8 @@ public class QSFactoryImpl implements QSFactory {
                 return new CPUInfoTile(mHost);
             case "sync":
                 return new SyncTile(mHost);
+            case "aod":
+                return new AODTile(mHost);
         }
         // Intent tiles.
         if (tileSpec.startsWith(IntentTile.PREFIX)) return IntentTile.create(mHost, tileSpec);
