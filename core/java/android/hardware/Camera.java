@@ -52,6 +52,11 @@ import com.android.internal.annotations.GuardedBy;
 import com.android.internal.app.IAppOpsCallback;
 import com.android.internal.app.IAppOpsService;
 
+import android.os.ICerberusServiceController;
+import android.os.CerberusServiceManager;
+import android.os.ServiceManager;
+import android.os.RemoteException;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -594,6 +599,20 @@ public class Camera {
         } else {
             mEventHandler = null;
         }
+
+        ICerberusServiceController cerberusService = ICerberusServiceController.Stub.asInterface(
+                    ServiceManager.getService(Context.CERBERUS_SERVICE_CONTROLLER));
+
+        String packageName = ActivityThread.currentOpPackageName();
+
+        try {
+            if( cerberusService != null  ) {
+                if( cerberusService.getAppOption(packageName,CerberusServiceManager.OP_CAMERA_HAL1) == 1 ) {
+                    halVersion = CAMERA_HAL_API_VERSION_1_0;
+                }
+            }
+        } catch(Exception e) {}
+
 
         return native_setup(new WeakReference<Camera>(this), cameraId, halVersion,
                 ActivityThread.currentOpPackageName());

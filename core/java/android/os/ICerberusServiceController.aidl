@@ -35,5 +35,6 @@ interface ICerberusServiceController {
     void setDefaultPerfProfile(String profile);
     String getDefaultThermProfile();
     void setDefaultThermProfile(String profile);
-    
+    int getAppOption(String packageName,int option);
+    void setAppOption(String packageName,int option, int value);    
 }

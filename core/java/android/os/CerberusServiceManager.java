@@ -57,6 +57,8 @@ public class CerberusServiceManager {
     public static final int SCREEN_BRIGHTNESS_AUTO_LOW = 10;
     public static final int SCREEN_BRIGHTNESS_FULL = 11;
 
+    public static final int OP_CAMERA_HAL1 = 1;
+
     private final Context mContext;
     private final ICerberusServiceController mService;
 
@@ -179,6 +181,23 @@ public class CerberusServiceManager {
     public void setDefaultThermProfile(String profile) {
         try {
             mService.setDefaultThermProfile(profile);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
+    public int getAppOption(String packageName,int option) {
+        try {
+            return mService.getAppOption(packageName,option);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return 0;
+        }
+    }
+
+    public void setAppOption(String packageName,int option,int value) {
+        try {
+            mService.setAppOption(packageName,option,value);
         } catch (RemoteException e) {
             e.rethrowFromSystemServer();
         }

@@ -1913,7 +1913,29 @@ public class CerberusService extends SystemService {
         SystemPropertiesSet("cerberus.therm.profile",mCurrentThermalProfile);
     }
 
+    public void setAppOptionInternal(String packageName, int option, int value) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
+            info.setAppOption(option,value);
+            setAppProfileLocked(info);
+        }
+        if( DEBUG ) {
+            Slog.i(TAG,"setAppOptionInternal package=" + packageName + ", option=" + option + ", value=" + value);
+        }
 
+    }
+
+    public int getAppOptionInternal(String packageName, int option) {
+        synchronized(this) {
+            ApplicationProfileInfo info = getAppProfileLocked(packageName);
+            if( info != null ) return  info.getAppOption(option);
+        }
+        if( DEBUG ) {
+            Slog.i(TAG,"getAppOption package=" + packageName);
+        }
+        return 0;
+
+    }
 
     void readConfigFileLocked() {
         Slog.d(TAG, "Reading config from " + mAppsConfigFile.getBaseFile());
@@ -1964,15 +1986,27 @@ public class CerberusService extends SystemService {
                 switch (tagName) {
                     case "app":
                         ApplicationProfileInfo info = new ApplicationProfileInfo();
-                        info.packageName = parser.getAttributeValue(null, "pn");
-                        info.perfProfile = parser.getAttributeValue(null, "pp");
-                        info.thermProfile = parser.getAttributeValue(null, "tp");
-                        info.isRestricted = Boolean.parseBoolean(parser.getAttributeValue(null, "rs"));
-                        info.priority = Integer.parseInt(parser.getAttributeValue(null, "pr"));
-                        try {
-                            info.brightness = Integer.parseInt(parser.getAttributeValue(null, "br"));
-                        } catch(Exception e1) {
-                            info.brightness = 0;
+                        int count = parser.getAttributeCount();
+                        for(int j=0;j<count;j++) {
+                            String attrName = parser.getAttributeName(j);
+                            String attrValue = parser.getAttributeValue(j);
+                            if( attrName.equals("pn") ) {
+                                info.packageName = attrValue;
+                            } else if( attrName.equals("pp") ) {
+                                info.perfProfile = attrValue;
+                            } else if( attrName.equals("tp") ) {
+                                info.thermProfile = attrValue;
+                            } else if( attrName.equals("rs") ) {
+                                info.isRestricted = Boolean.parseBoolean(attrValue);
+                            } else if( attrName.equals("pr") ) {
+                                info.priority = Integer.parseInt(attrValue);
+                            } else if( attrName.equals("br") ) {
+                                info.brightness = Integer.parseInt(attrValue);
+                            } else if( attrName.startsWith("op_") ) {
+                                int opt = Integer.parseInt(attrName.substring(3));
+                                int value = Integer.parseInt(attrValue);
+                                info.setAppOption(opt,value);
+                            }
                         }
                         setAppProfileLocked(info);
                         break;
@@ -2044,6 +2078,15 @@ public class CerberusService extends SystemService {
                 out.attribute(null, "rs",Boolean.toString(info.isRestricted));
                 out.attribute(null, "pr",Integer.toString(info.priority));
                 out.attribute(null, "br",Integer.toString(info.brightness));
+
+                ArrayMap<Integer, Integer> appOps = info.getOpArray();
+                for (int j = 0; j < appOps.size(); j++) {
+                    Integer key = appOps.keyAt(j);
+                    Integer value = appOps.valueAt(j);
+                    String attrName = "op_" + Integer.toString(key);
+                    out.attribute(null, attrName,Integer.toString(value));
+                }
+
             out.endTag(null, "app");
         }
         out.endTag(null, "config");
@@ -2520,7 +2563,25 @@ public class CerberusService extends SystemService {
                 Binder.restoreCallingIdentity(ident);
             }
         }
+        @Override public void setAppOption(String profile, int option, int value) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setAppOptionInternal(profile, option, value);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public int getAppOption(String profile, int option) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getAppOptionInternal(profile, option);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
     }
+
 
     class ApplicationProfileInfo {
         public String packageName;
@@ -2528,12 +2589,28 @@ public class CerberusService extends SystemService {
         public String thermProfile;
         public boolean isRestricted;
         public int priority;
-        public int brightness; 
+        public int brightness;
+        private ArrayMap<Integer, Integer> mAppOps = new ArrayMap<>();
 
         public ApplicationProfileInfo() {
             perfProfile = "default";
             thermProfile = "default";
             brightness = 0;
+        }
+
+        public int getAppOption(int option) {
+            if( mAppOps.containsKey(option) ) {
+                return mAppOps.get(option);
+            }
+            return 0;
+        }
+
+        public void setAppOption(int option,int value) {
+            mAppOps.put(option,value);
+        }
+
+        public ArrayMap<Integer, Integer> getOpArray() {
+            return mAppOps;
         }
 
         @Override
