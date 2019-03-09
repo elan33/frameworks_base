@@ -279,15 +279,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
         mTrafficHandler.removeMessages(1);
     }
 
-
-    private void setTextViewDrawableColor(int color) {
-        for (Drawable drawable : this.getCompoundDrawables()) {
-            if (drawable != null) {
-                drawable.setColorFilter(color, Mode.MULTIPLY);
-            }
-        }
-    }
-
     private void updateTrafficDrawable() {
         int intTrafficDrawable;
         if (mIsEnabled) {
@@ -298,7 +289,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
         if (intTrafficDrawable != 0) {
             Drawable d = getContext().getDrawable(intTrafficDrawable);
             d.setColorFilter(mTintColor, Mode.MULTIPLY);
-            setTextViewDrawableColor(mTintColor);
             setCompoundDrawablePadding(txtImgPadding);
             setCompoundDrawablesWithIntrinsicBounds(null, null, d, null);
         } else {
@@ -316,13 +306,13 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
 
     @Override
     public void onDarkChanged(Rect area, float darkIntensity, int tint) {
-        mTintColor = DarkIconDispatcher.getTint(area, this, tint);
         if (!DarkIconDispatcher.isInArea(area, this)) {
+            Log.d(TAG, "onDarkChanged ignore " + tint + ", mTintColor=" + mTintColor, new Throwable());
             return;
         }
-
+        mTintColor = DarkIconDispatcher.getTint(area, this, tint);
         Log.d(TAG, "onDarkChanged " + tint + ", mTintColor=" + mTintColor, new Throwable());
-        //setTextColor(tint);
+        setTextColor(tint);
         updateTrafficDrawable();
     }
 
@@ -372,8 +362,8 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable  {
     @Override
     public void setStaticDrawableColor(int color) {
         Log.d(TAG, "setStaticDrawableColor " + color, new Throwable());
-        //mTintColor = color;
-        //setTextColor(mTintColor);
+        mTintColor = color;
+        setTextColor(mTintColor);
         updateTrafficDrawable();
     }
 
