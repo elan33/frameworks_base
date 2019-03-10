@@ -7,6 +7,7 @@
   <java-symbol type="bool" name="config_deviceHasHallSensor" />
   <java-symbol type="bool" name="config_deviceHasLidSensor" />
   <java-symbol type="bool" name="config_deviceHasVariableButtonBrightness" />
+  <java-symbol type="bool" name="config_supportCameraHAL1" />
 
   <!-- display for radio tech -->
   <java-symbol type="bool" name="config_display_rat" />

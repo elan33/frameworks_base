@@ -22,6 +22,7 @@
     <bool name="config_useCerberusLeecoDevice" translatable="false">false</bool>
     <bool name="config_deviceHasHallSensor" translatable="false">false</bool>
     <bool name="config_deviceHasLidSensor" translatable="false">false</bool>
+    <bool name="config_supportCameraHAL1" translatable="false">true</bool>
 
     <!-- Button brightness -->
     <bool name="config_deviceHasVariableButtonBrightness" translatable="false">false</bool>
