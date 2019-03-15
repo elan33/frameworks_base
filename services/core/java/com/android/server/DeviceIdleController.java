@@ -86,8 +86,12 @@ import com.android.internal.util.FastXmlSerializer;
 import com.android.internal.util.Preconditions;
 import com.android.internal.util.XmlUtils;
 import com.android.server.am.BatteryStatsService;
-import com.android.server.am.CerberusService;
 import com.android.server.net.NetworkPolicyManagerInternal;
+
+import com.android.server.am.CerberusService;
+import android.os.ICerberusServiceController;
+import android.os.CerberusServiceManager;
+
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -122,7 +126,7 @@ public class DeviceIdleController extends SystemService
     private ActivityManagerInternal mLocalActivityManager;
     private PowerManagerInternal mLocalPowerManager;
     private PowerManager mPowerManager;
-    private CerberusService mCerberusService;
+    private ICerberusServiceController mCerberusService;
     private ConnectivityService mConnectivityService;
     private INetworkPolicyManager mNetworkPolicyManager;
     private SensorManager mSensorManager;
@@ -148,6 +152,8 @@ public class DeviceIdleController extends SystemService
     private Location mLastGpsLocation;
     // Current locked state of the screen
     private boolean mScreenLocked;
+    private boolean mIsReaderMode;
+
 
     /** Device is currently active. */
     private static final int STATE_ACTIVE = 0;
@@ -420,6 +426,15 @@ public class DeviceIdleController extends SystemService
         public void onReceive(Context context, Intent intent) {
             synchronized (DeviceIdleController.this) {
                 updateInteractivityLocked();
+            }
+        }
+    };
+
+    private final BroadcastReceiver mReaderReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            synchronized (DeviceIdleController.this) {
+                updateReaderModeLocked();
             }
         }
     };
@@ -1579,9 +1594,8 @@ public class DeviceIdleController extends SystemService
                         (PowerManager) getContext().getSystemService(Context.POWER_SERVICE),
                         mHandler, mSensorManager, this, angleThreshold);
 
-                mCerberusService = LocalServices.getService(CerberusService.class);
-                mCerberusService.setDeviceIdleController(this);
-
+                mCerberusService = ICerberusServiceController.Stub.asInterface(
+                    ServiceManager.getService(Context.CERBERUS_SERVICE_CONTROLLER));
 
                 mAppStateTracker.onSystemServicesReady();
 
@@ -1610,6 +1624,11 @@ public class DeviceIdleController extends SystemService
                 filter.addAction(Intent.ACTION_SCREEN_ON);
                 getContext().registerReceiver(mInteractivityReceiver, filter);
 
+                filter = new IntentFilter();
+                filter.addAction(CerberusServiceManager.ACTION_READER_OFF);
+                filter.addAction(CerberusServiceManager.ACTION_READER_ON);
+                getContext().registerReceiver(mReaderReceiver, filter);
+
                 mLocalActivityManager.setDeviceIdleWhitelist(
                         mPowerSaveWhitelistAllAppIdArray, mPowerSaveWhitelistExceptIdleAppIdArray);
                 mLocalPowerManager.setDeviceIdleWhitelist(mPowerSaveWhitelistAllAppIdArray);
@@ -1618,6 +1637,7 @@ public class DeviceIdleController extends SystemService
 
                 passWhiteListsToForceAppStandbyTrackerLocked();
                 updateInteractivityLocked();
+                updateReaderModeLocked();
             }
             updateConnectivityState(null);
         }
@@ -2095,6 +2115,25 @@ public class DeviceIdleController extends SystemService
         }
     }
 
+    void updateReaderModeLocked() {
+        try {
+        boolean isReaderMode = mCerberusService.isReaderMode();
+        if (DEBUG) Slog.d(TAG, "updateReaderModeLocked: isReaderMode=" + isReaderMode);
+        if( !mScreenOn ) return;
+        if (!mIsReaderMode && isReaderMode) {
+            mIsReaderMode = true;
+            if (!mForceIdle) {
+                becomeInactiveIfAppropriateLocked();
+            }
+        } else if (!isReaderMode && mIsReaderMode) {
+            mIsReaderMode = false;
+            if (!mForceIdle && (!mScreenLocked || !mConstants.WAIT_FOR_UNLOCK)) {
+                becomeActiveLocked("reader", Process.myUid());
+            }
+        }
+        } catch(Exception exb) {}
+    }
+
     void updateInteractivityLocked() {
         // The interactivity state from the power manager tells us whether the display is
         // in a state that we need to keep things running so they will update at a normal
@@ -2168,7 +2207,11 @@ public class DeviceIdleController extends SystemService
                 mInactiveTimeout = mConstants.INACTIVE_TIMEOUT;
         }
 
-        if ((!mScreenOn && !mCharging) || mForceIdle) {
+        if( mIsReaderMode ) {
+                mInactiveTimeout = 5;
+        }
+
+        if (( (!mScreenOn || mIsReaderMode) && !mCharging) || mForceIdle) {
             // Screen has turned off; we are now going to become inactive and start
             // waiting to see if we will ultimately go idle.
             if (mState == STATE_ACTIVE && mDeepEnabled) {
@@ -3058,6 +3101,7 @@ public class DeviceIdleController extends SystemService
                             case "deep": pw.println(stateToString(mState)); break;
                             case "force": pw.println(mForceIdle); break;
                             case "screen": pw.println(mScreenOn); break;
+                            case "reader": pw.println(mIsReaderMode); break;
                             case "charging": pw.println(mCharging); break;
                             case "network": pw.println(mNetworkConnected); break;
                             default: pw.println("Unknown get option: " + arg); break;
@@ -3494,6 +3538,7 @@ public class DeviceIdleController extends SystemService
             pw.print("  mMotionSensor="); pw.println(mMotionSensor);
             pw.print("  mScreenOn="); pw.println(mScreenOn);
             pw.print("  mScreenLocked="); pw.println(mScreenLocked);
+            pw.print("  mIsReaderMode="); pw.println(mIsReaderMode);
             pw.print("  mNetworkConnected="); pw.println(mNetworkConnected);
             pw.print("  mCharging="); pw.println(mCharging);
             pw.print("  mMotionActive="); pw.println(mMotionListener.active);

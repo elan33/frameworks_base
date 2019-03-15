@@ -222,16 +222,22 @@ public class CerberusService extends SystemService {
     AppOpsService mAppOpsService;
 
     AlarmManagerService mAlarmManagerService;
-    DeviceIdleController mDeviceIdleController;
     PowerManager mPowerManager;
     PowerManagerService mPowerManagerService;
     ActivityManagerService mActivityManagerService;
 
     private boolean mNetworkAllowedWhileIdle;
 
+    Object mProfileSync = new Object();
     public final AtomicFile mAppsConfigFile;
 
 
+    private final Intent mReaderOnIntent;
+    private final Intent mReaderOffIntent;
+    private final Intent mBrightnessOverrideIntent;
+
+
+    Object mWhitelistSync = new Object();
     // Set of app ids that we will always respect the wake locks for.
     int[] mDeviceIdleWhitelist = new int[0];
 
@@ -252,6 +258,21 @@ public class CerberusService extends SystemService {
         mHandler = new MyHandler(mHandlerThread.getLooper());
 
         mAppsConfigFile = new AtomicFile(new File(getSystemDir(), "cerberus_service_apps.xml"));
+
+        mReaderOnIntent = new Intent(CerberusServiceManager.ACTION_READER_ON);
+        mReaderOnIntent.addFlags(
+                Intent.FLAG_RECEIVER_REGISTERED_ONLY | Intent.FLAG_RECEIVER_FOREGROUND
+                | Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS);
+        mReaderOffIntent = new Intent(CerberusServiceManager.ACTION_READER_OFF);
+        mReaderOffIntent.addFlags(
+                Intent.FLAG_RECEIVER_REGISTERED_ONLY | Intent.FLAG_RECEIVER_FOREGROUND
+                | Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS);
+
+        mBrightnessOverrideIntent = new Intent(CerberusServiceManager.ACTION_BRIGHTNESS_CHANGED);
+        mBrightnessOverrideIntent.addFlags(
+                Intent.FLAG_RECEIVER_REGISTERED_ONLY | Intent.FLAG_RECEIVER_FOREGROUND
+                | Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS);
+
 
     }
 
@@ -343,11 +364,12 @@ public class CerberusService extends SystemService {
         }
     }
 
+    /*
     public void setDeviceIdleController(DeviceIdleController service) {
         synchronized (this) {
             mDeviceIdleController = service;
         }
-    }
+    }*/
 
     @Override
     public void onSwitchUser(int userHandle) {
@@ -879,49 +901,49 @@ public class CerberusService extends SystemService {
     };
 
 
-    public int getBrightnessOverride() {
+    private int getBrightnessOverrideInternal() {
         synchronized(this) {
             return getBrightnessOverrideLocked();
         }
     }
 
-    public boolean isReaderMode() {
+    private boolean isReaderModeInternal() {
         synchronized(this) {
             return isReaderModeLocked();
         }
     }
 
-    public boolean isDeviceIdleMode() {
+    private boolean isDeviceIdleModeInternal() {
         synchronized(this) {
             return isDeviceIdleModeLocked();
         }
     }
 
-    public boolean isAggressiveDeviceIdleMode() {
+    private boolean isAggressiveDeviceIdleModeInternal() {
         synchronized(this) {
             return isAggressiveDeviceIdleModeLocked();
         }
     }
 
-    public boolean isLightDeviceIdleMode() {
+    private boolean isLightDeviceIdleModeInternal() {
         synchronized(this) {
             return isLightDeviceIdleModeLocked();
         }
     }
 
-    public void setDeviceIdleMode(boolean mode) {
+    private void setDeviceIdleModeInternal(boolean mode) {
         synchronized(this) {
             setDeviceIdleModeLocked(mode);
         }
     }
 
-    public void setLightDeviceIdleMode(boolean mode) {
+    private void setLightDeviceIdleModeInternal(boolean mode) {
         synchronized(this) {
             setLightDeviceIdleModeLocked(mode);
         }
     }
 
-    public boolean isNetworkAllowedWhileIdle() {
+    private boolean isNetworkAllowedWhileIdleInternal() {
         return false;
     }
 
@@ -930,45 +952,45 @@ public class CerberusService extends SystemService {
         mHandler.sendEmptyMessage(MESSAGE_WAKEFULNESS_CHANGED);
     }
 
-    public void setWakefulness(int wakefulness, int reason) {
+    private void setWakefulnessInternal(int wakefulness, int reason) {
         synchronized(this) {
             setWakefulnessLocked(wakefulness,reason);
         }
     }
 
-    public int getWakefulness() {
+    private int getWakefulnessInternal() {
         synchronized(this) {
             return getWakefulnessLocked(); 
         }        
     }
 
-    public int getWakefulnessReason() {
+    private int getWakefulnessReasonInternal() {
         synchronized(this) {
             return getWakefulnessReasonLocked(); 
         }        
     }
 
 
-    public String lastWakeupReason() {
+    private String lastWakeupReasonInternal() {
         synchronized(this) {
             return lastWakeupReasonLocked();
         }
     }
 
-    public void setLastWakeupReason(String reason) {
+    private void setLastWakeupReasonInternal(String reason) {
         synchronized(this) {
             setLastWakeupReasonLocked(reason);
         }
     }
 
     public void setDeviceIdleWhitelist(int[] appids) {
-        synchronized (this) {
+        synchronized (mWhitelistSync) {
             mDeviceIdleWhitelist = appids;
         }
     }
 
     public void setDeviceIdleTempWhitelist(int[] appids) {
-        synchronized (this) {
+        synchronized (mWhitelistSync) {
             mDeviceIdleTempWhitelist = appids;
         }
     }
@@ -1086,9 +1108,12 @@ public class CerberusService extends SystemService {
                 a.statsTag.contains("com.google.android.clockwork.calendar.action.REFRESH")) {
                 block = true;
             }
-        } else if( ((a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) == 0) &&
-            (Arrays.binarySearch(mDeviceIdleWhitelist, a.uid) < 0) ) {
-            block = true;
+        } else if( ((a.flags&(AlarmManager.FLAG_ALLOW_WHILE_IDLE_UNRESTRICTED | AlarmManager.FLAG_WAKE_FROM_IDLE)) == 0)) {
+            synchronized(mWhitelistSync) {
+                if( Arrays.binarySearch(mDeviceIdleWhitelist, a.uid) < 0 ) {
+                    block = true;
+                }
+            }
         }
 
         if( block ) {
@@ -1193,13 +1218,29 @@ public class CerberusService extends SystemService {
     public boolean isBroadcastFilterWhitelisted(BroadcastRecord r, BroadcastFilter filter) {
         //Slog.i(TAG,"isBroadcastFilterWhitelisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + 
         //" to " + filter.receiverList.app + "/" + filter.receiverList.uid + "/" + filter.receiverList.pid + ">" + r.intent);
-        return false;
+
+        return isBroadcastWhitelisted(r,null);
+        //return false;
     }
 
     public boolean isBroadcastFilterBlacklisted(BroadcastRecord r,  BroadcastFilter filter) {
         //Slog.i(TAG,"isBroadcastFilterBlacklisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + 
         //" to " + filter.receiverList.app + "/" + filter.receiverList.uid + "/" + filter.receiverList.pid + ">" + r.intent);
-        return false;
+
+            if( DEBUG ) {
+                Slog.i(TAG,"isBroadcastFilterBlacklisted: from " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+            }
+            if( !mDeviceIdleMode && !mApplyRestrictionsScreenOn ) {
+                return false; 
+            }
+            if( filter == null || filter.receiverList == null ) {
+                 Slog.i(TAG,"isBroadcastFilterBlacklisted: BroadcastFilter info NULL for " + r.callerPackage + "/" + r.callingUid + "/" + r.callingPid + " to " + r.intent);
+                 return false;
+            }
+            if( isAppRestricted(filter.receiverList.uid, filter.packageName) ) return true;
+
+            return false;
+
     }
 
     public boolean isBroadcastWhitelisted(BroadcastRecord r, ResolveInfo info) {
@@ -1338,40 +1379,40 @@ public class CerberusService extends SystemService {
                             String calledName, int calledUid, int calledPid, String Tag) {
         final String recordName =  mDeviceIdleMode + "/" + type + "/" + callerName  + "->" + calledName + "/" + Tag;
 
-        synchronized(this) {
-
-            RestrictionStatistics stat = mRestrictionStatistics.get(recordName);
-            if( stat == null ) {
-                stat = new RestrictionStatistics(type, callerName, callerUid, callerPid,
-                                            calledName, calledUid, calledPid, Tag);
-                mRestrictionStatistics.put(recordName, stat);
-            }
-            if( allowed ) stat.allowed++;
-            else stat.blocked++;
-            stat.deviceIdleMode = mDeviceIdleMode;
-        }
-
         if( DEBUG ) {
-           Slog.i(TAG,"noteRestrictionStatistics:" + allowed + ":" + recordName);
+            synchronized(this) {
+                RestrictionStatistics stat = mRestrictionStatistics.get(recordName);
+                if( stat == null ) {
+                    stat = new RestrictionStatistics(type, callerName, callerUid, callerPid,
+                                                calledName, calledUid, calledPid, Tag);
+                    mRestrictionStatistics.put(recordName, stat);
+                }
+                if( allowed ) stat.allowed++;
+                else stat.blocked++;
+                stat.deviceIdleMode = mDeviceIdleMode;
+            }
+            Slog.i(TAG,"noteRestrictionStatistics:" + allowed + ":" + recordName);
         }
     }
 
     public void logRestrictionStatistics() {
-        synchronized(this) {
-            for(int i=0;i<mRestrictionStatistics.size();i++) {
-                RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
-                if( stat.allowed > 0 ) {
-                    if( DEBUG ) {
-                        Slog.i(TAG,"RestrictionStatistics: allowed :" + stat.getLog() + "; allowed=" + stat.allowed);
+        if( DEBUG ) {
+            synchronized(this) {
+                for(int i=0;i<mRestrictionStatistics.size();i++) {
+                    RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
+                    if( stat.allowed > 0 ) {
+                        if( DEBUG ) {
+                            Slog.i(TAG,"RestrictionStatistics: allowed :" + stat.getLog() + "; allowed=" + stat.allowed);
+                        }
                     }
                 }
-            }
-
-            for(int i=0;i<mRestrictionStatistics.size();i++) {
-                RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
-                if( stat.blocked > 0 ) {
-                    if( DEBUG ) {
-                        Slog.i(TAG,"RestrictionStatistics: blocked :" + stat.getLog() + "; blocked=" + stat.blocked);
+    
+                for(int i=0;i<mRestrictionStatistics.size();i++) {
+                    RestrictionStatistics stat = mRestrictionStatistics.valueAt(i);
+                    if( stat.blocked > 0 ) {
+                        if( DEBUG ) {
+                            Slog.i(TAG,"RestrictionStatistics: blocked :" + stat.getLog() + "; blocked=" + stat.blocked);
+                        }
                     }
                 }
             }
@@ -1379,7 +1420,7 @@ public class CerberusService extends SystemService {
     }
 
     public boolean isAppRestricted(int uid, String packageName) {
-        synchronized(this) {
+        synchronized(mWhitelistSync) {
             if( Arrays.binarySearch(mDeviceIdleWhitelist, uid) >= 0) return false;
             if( Arrays.binarySearch(mDeviceIdleTempWhitelist, uid) >= 0) return false;
         }
@@ -1485,7 +1526,7 @@ public class CerberusService extends SystemService {
             Slog.i(TAG,"onWakefulnessChanged");
         }
 
-        synchronized(this) {
+        synchronized(mProfileSync) {
             if( getWakefulnessLocked() == 0 ) {
                 awakePerformanceProfile = mCurrentPerformanceProfile;
                 awakeThermalProfile = mCurrentThermalProfile;
@@ -1540,7 +1581,7 @@ public class CerberusService extends SystemService {
         }
 
         ApplicationProfileInfo info = null;
-        synchronized(this) {
+        synchronized(mProfileSync) {
             info = getAppProfileLocked(act.packageName);
         }
 
@@ -1572,19 +1613,28 @@ public class CerberusService extends SystemService {
                     if( DEBUG_PROFILE ) {
                         Slog.i(TAG,"setPerformanceProfile: reader mode activated");
                     }
-                    mIsReaderModeActive = true;
+                    updateReaderMode(true);
                 } else {
-                    mIsReaderModeActive = false;
+                    updateReaderMode(false);
                 }
                 mCurrentPerformanceProfile = profile;
 
-                
-                //SystemPropertiesSet("cerberus.perf.profile",profile);
                 setPerformanceProfileInternal(profile);
             } else {
                 if( DEBUG_PROFILE ) {
                     Slog.i(TAG,"setPerformanceProfile: ignore already active profile=" + profile);
                 }   
+            }
+        }
+    }
+
+    void updateReaderMode(boolean mode) {
+        if( mode != mIsReaderModeActive ) {
+            mIsReaderModeActive = mode;
+            if( mode ) {
+                mContext.sendBroadcast(mReaderOnIntent);
+            } else {
+                mContext.sendBroadcast(mReaderOffIntent);
             }
         }
     }
@@ -1648,6 +1698,7 @@ public class CerberusService extends SystemService {
         default:
             mBrightnessOverride = -1;
         }
+        mContext.sendBroadcast(mBrightnessOverrideIntent);
     }
 
 
@@ -1771,7 +1822,7 @@ public class CerberusService extends SystemService {
 
 
     public String getAppPerfProfileInternal(String packageName) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) {
                 if( DEBUG ) {
@@ -1787,7 +1838,7 @@ public class CerberusService extends SystemService {
 
     }
     public String getAppThermProfileInternal(String packageName) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) {
                 if( DEBUG ) {
@@ -1802,7 +1853,7 @@ public class CerberusService extends SystemService {
         return "default";
     }
     public void setAppPerfProfileInternal(String packageName, String profile) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
             info.perfProfile = profile;
             setAppProfileLocked(info);
@@ -1813,7 +1864,7 @@ public class CerberusService extends SystemService {
     }
 
     public void setAppThermProfileInternal(String packageName, String profile) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
             info.thermProfile = profile;
             setAppProfileLocked(info);
@@ -1824,7 +1875,7 @@ public class CerberusService extends SystemService {
     }
     
     public boolean isAppRestrictedProfileInternal(String packageName) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) return  info.isRestricted;
         }
@@ -1835,7 +1886,7 @@ public class CerberusService extends SystemService {
     }
 
     public void setAppRestrictedProfileInternal(String packageName, boolean restricted) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
             info.isRestricted = restricted;
             setAppProfileLocked(info);
@@ -1843,7 +1894,7 @@ public class CerberusService extends SystemService {
     }
 
     public int getAppPriorityInternal(String packageName) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) return  info.priority;
         }
@@ -1854,7 +1905,7 @@ public class CerberusService extends SystemService {
     }
 
     public int setAppPriorityInternal(String packageName, int priority) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
             if( priority == -1 ) {
                 info.isRestricted = true;
@@ -1871,7 +1922,7 @@ public class CerberusService extends SystemService {
     }
 
     public int getAppBrightnessInternal(String packageName) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) {
                 Slog.i(TAG,"getAppBrightness package=" + packageName + ", brightness=" + info.brightness);
@@ -1885,7 +1936,7 @@ public class CerberusService extends SystemService {
     }
 
     public int setAppBrightnessInternal(String packageName, int brightness) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
             info.brightness = brightness;
             setAppProfileLocked(info);
@@ -1917,7 +1968,7 @@ public class CerberusService extends SystemService {
     }
 
     public void setAppOptionInternal(String packageName, int option, int value) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getOrCreateAppProfileLocked(packageName);
             info.setAppOption(option,value);
             setAppProfileLocked(info);
@@ -1929,7 +1980,7 @@ public class CerberusService extends SystemService {
     }
 
     public int getAppOptionInternal(String packageName, int option) {
-        synchronized(this) {
+        synchronized(mProfileSync) {
             ApplicationProfileInfo info = getAppProfileLocked(packageName);
             if( info != null ) return  info.getAppOption(option);
         }
@@ -2045,7 +2096,7 @@ public class CerberusService extends SystemService {
         final ByteArrayOutputStream memStream = new ByteArrayOutputStream();
 
         try {
-            synchronized (this) {
+            synchronized (mProfileSync) {
                 XmlSerializer out = new FastXmlSerializer();
                 out.setOutput(memStream, StandardCharsets.UTF_8.name());
                 writeConfigFileLocked(out);
@@ -2583,6 +2634,83 @@ public class CerberusService extends SystemService {
                 Binder.restoreCallingIdentity(ident);
             }
         }
+
+       @Override public int getBrightnessOverride() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return getBrightnessOverrideInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+
+        @Override public boolean isReaderMode() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return isReaderModeInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public boolean isDeviceIdleMode() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return isDeviceIdleModeInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public boolean isLightDeviceIdleMode() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return isLightDeviceIdleModeInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setDeviceIdleMode(boolean enabled) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setDeviceIdleModeInternal(enabled);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setLightDeviceIdleMode(boolean enabled) {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setLightDeviceIdleModeInternal(enabled);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+
+        @Override public boolean isAggressiveDeviceIdleMode() {
+            long ident = Binder.clearCallingIdentity();
+            try {
+                return isAggressiveDeviceIdleModeInternal();
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override public void setWakefulness(int wakefulness,int reason){
+            long ident = Binder.clearCallingIdentity();
+            try {
+                setWakefulnessInternal(wakefulness, reason);
+            } finally {
+                Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+
+
     }
 
 

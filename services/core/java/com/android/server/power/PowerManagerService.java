@@ -59,6 +59,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.os.ShellCallback;
+import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Trace;
@@ -107,7 +108,12 @@ import com.android.server.power.batterysaver.BatterySaverController;
 import com.android.server.power.batterysaver.BatterySaverStateMachine;
 import com.android.server.power.batterysaver.BatterySavingStats;
 import com.android.server.LocalServices;
+
+
 import com.android.server.am.CerberusService;
+import android.os.ICerberusServiceController;
+import android.os.CerberusServiceManager;
+
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -562,6 +568,8 @@ public final class PowerManagerService extends SystemService
     private QCNsrmPowerExtension qcNsrmPowExt;
 
     private CerberusService mCerberusService;
+    private ICerberusServiceController mCerberusManager;
+
 
     // True if theater mode is enabled
     private boolean mTheaterModeEnabled;
@@ -804,6 +812,10 @@ public final class PowerManagerService extends SystemService
         synchronized (mLock) {
             mSystemReady = true;
             mAppOps = appOps;
+
+            mCerberusManager = ICerberusServiceController.Stub.asInterface(
+                ServiceManager.getService(Context.CERBERUS_SERVICE_CONTROLLER));
+
             mDreamManager = getLocalService(DreamManagerInternal.class);
             mDisplayManagerInternal = getLocalService(DisplayManagerInternal.class);
             mPolicy = getLocalService(WindowManagerPolicy.class);
@@ -943,6 +955,16 @@ public final class PowerManagerService extends SystemService
         filter = new IntentFilter();
         filter.addAction(Intent.ACTION_DOCK_EVENT);
         mContext.registerReceiver(new DockReceiver(), filter, null, mHandler);
+
+        filter = new IntentFilter();
+        filter.addAction(CerberusServiceManager.ACTION_READER_OFF);
+        filter.addAction(CerberusServiceManager.ACTION_READER_ON);
+        mContext.registerReceiver(new ReaderModeReceiver(), filter, null, mHandler);
+
+        filter = new IntentFilter();
+        filter.addAction(CerberusServiceManager.ACTION_BRIGHTNESS_CHANGED);
+        mContext.registerReceiver(new BrightnessOverrideReceiver(), filter, null, mHandler);
+
     }
 
     private void readConfigurationLocked() {
@@ -1662,9 +1684,12 @@ public final class PowerManagerService extends SystemService
                 mNotifier.onWakefulnessChangeStarted(wakefulness, reason);
             }
             SystemPropertiesSet("power.wakefulness",Integer.toString(mWakefulness));
-        
-            if( mCerberusService != null ) {
-                mCerberusService.setWakefulness(wakefulness,reason);
+
+
+            if( mCerberusManager != null ) {
+                try {
+                    mCerberusManager.setWakefulness(wakefulness,reason);
+                } catch(Exception exb) {}
             }
         }
     }
@@ -2848,25 +2873,11 @@ public final class PowerManagerService extends SystemService
             return true;
         }
         if (mDisplayPowerRequest.isBrightOrDim()) {
-            if( mCerberusService != null ) {
-                boolean readerModeActive = mCerberusService.isReaderMode();
-                int brightnessOverrideFromCerberusService = mCerberusService.getBrightnessOverride();
-                if( brightnessOverrideFromCerberusService != mBrightnessOverrideFromCerberusService ) {
-                    Slog.d(TAG, "Brightnsess override changed to " + brightnessOverrideFromCerberusService);
-                    mBrightnessOverrideFromCerberusService = brightnessOverrideFromCerberusService;
-                    updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
-                }
-                if( mReaderModeActive != readerModeActive ) {
-                    Slog.d(TAG, "ReaderMode changed to " + readerModeActive);
-                    mReaderModeActive = readerModeActive;
-                    updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
-                }
-                if( readerModeActive ) {   
-                    if( (SystemClock.elapsedRealtime() - lastInteractiveHint) > 1000 ) {
-                        return false;
-                    } else {
-                        Slog.d(TAG, "ReaderMode blocked by user activity");
-                    }
+           if( mReaderModeActive ) {
+                if( (SystemClock.elapsedRealtime() - lastInteractiveHint) > 1000 ) {
+                    return false;
+                } else {
+                    Slog.d(TAG, "ReaderMode blocked by user activity");
                 }
             }
             // If we asked for the screen to be on but it is off due to the proximity
@@ -3070,9 +3081,11 @@ public final class PowerManagerService extends SystemService
         }
     }
 
-    boolean setDeviceIdleModeInternal(boolean enabled) {
-        if( mCerberusService != null ) {
-            mCerberusService.setDeviceIdleMode(enabled);
+    boolean setDeviceIdleModeInternal(boolean enabled){
+        if( mCerberusManager != null ) {
+            try {
+                mCerberusManager.setDeviceIdleMode(enabled);
+            } catch(Exception exb) {}
         }
         synchronized (mLock) {
             if (mDeviceIdleMode == enabled) {
@@ -3090,8 +3103,10 @@ public final class PowerManagerService extends SystemService
     }
 
     boolean setLightDeviceIdleModeInternal(boolean enabled) {
-        if( mCerberusService != null ) {
-            mCerberusService.setLightDeviceIdleMode(enabled);
+        if( mCerberusManager != null ) {
+            try {
+                mCerberusManager.setLightDeviceIdleMode(enabled);
+            }catch(Exception exb) {}
         }
         synchronized (mLock) {
             if (mLightDeviceIdleMode != enabled) {
@@ -4053,6 +4068,42 @@ public final class PowerManagerService extends SystemService
 
     private static WorkSource copyWorkSource(WorkSource workSource) {
         return workSource != null ? new WorkSource(workSource) : null;
+    }
+
+    private final class ReaderModeReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if( mCerberusService != null ) {
+                try {
+                boolean readerModeActive = mCerberusManager.isReaderMode();
+                synchronized (mLock) {
+                    if( mReaderModeActive != readerModeActive ) {
+                        Slog.d(TAG, "ReaderMode changed to " + readerModeActive);
+                        mReaderModeActive = readerModeActive;
+                        updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);
+                    }
+                }
+                } catch(Exception exb){}
+            }
+        }
+    }
+
+    private final class BrightnessOverrideReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if( mCerberusService != null ) {
+                try {
+                int brightnessOverrideFromCerberusService = mCerberusManager.getBrightnessOverride();
+                synchronized (mLock) {
+                    if( brightnessOverrideFromCerberusService != mBrightnessOverrideFromCerberusService ) {
+                        Slog.d(TAG, "Brightnsess override changed to " + brightnessOverrideFromCerberusService);
+                        mBrightnessOverrideFromCerberusService = brightnessOverrideFromCerberusService;
+                        updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);   
+                    }
+                }
+                }catch(Exception exb) {}
+            }
+        }
     }
 
     private final class BatteryReceiver extends BroadcastReceiver {

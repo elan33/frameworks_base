@@ -31,6 +31,12 @@ import android.content.Context;
 @SystemService(Context.CERBERUS_SERVICE_CONTROLLER)
 public class CerberusServiceManager {
 
+    public static final String ACTION_READER_ON = "ACTION_READER_ON";
+    public static final String ACTION_READER_OFF = "ACTION_READER_OFF";
+
+    public static final String ACTION_BRIGHTNESS_CHANGED = "ACTION_BRIGHTNESS_CHANGED";
+
+
     public static final int PRIO_CRITICAL = 0;
     public static final int PRIO_SYSTEM = 1;
     public static final int PRIO_UNRESTRICTED = 2;
@@ -203,6 +209,79 @@ public class CerberusServiceManager {
             e.rethrowFromSystemServer();
         }
     }
+
+
+
+
+    public int getBrightnessOverride() {
+        try {
+            return mService.getBrightnessOverride();
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return 0;
+        }
+    }
+
+    boolean isReaderMode() {
+        try {
+            return mService.isReaderMode();
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return false;
+        }
+    }
+
+    boolean isDeviceIdleMode() {
+        try {
+            return mService.isDeviceIdleMode();
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return false;
+        }
+    }
+
+    boolean isLightDeviceIdleMode() {
+        try {
+            return mService.isLightDeviceIdleMode();
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return false;
+        }
+    }
+
+    void setDeviceIdleMode(boolean enabled) {
+        try {
+            mService.setDeviceIdleMode(enabled);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
+    void setLightDeviceIdleMode(boolean enabled) {
+        try {
+            mService.setLightDeviceIdleMode(enabled);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
+    boolean isAggressiveDeviceIdleMode() {
+        try {
+            return mService.isLightDeviceIdleMode();
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+            return false;
+        }
+    }
+
+    void setWakefulness(int wakefulness,int reason) {
+        try {
+            mService.setWakefulness(wakefulness,reason);
+        } catch (RemoteException e) {
+            e.rethrowFromSystemServer();
+        }
+    }
+
 }
 
 
