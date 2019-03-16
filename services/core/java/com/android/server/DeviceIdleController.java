@@ -2116,18 +2116,18 @@ public class DeviceIdleController extends SystemService
     }
 
     void updateReaderModeLocked() {
+        
         try {
         boolean isReaderMode = mCerberusService.isReaderMode();
         if (DEBUG) Slog.d(TAG, "updateReaderModeLocked: isReaderMode=" + isReaderMode);
-        if( !mScreenOn ) return;
         if (!mIsReaderMode && isReaderMode) {
             mIsReaderMode = true;
-            if (!mForceIdle) {
+            if (mScreenOn && !mForceIdle) {
                 becomeInactiveIfAppropriateLocked();
             }
         } else if (!isReaderMode && mIsReaderMode) {
             mIsReaderMode = false;
-            if (!mForceIdle && (!mScreenLocked || !mConstants.WAIT_FOR_UNLOCK)) {
+            if (mScreenOn && !mForceIdle ) {
                 becomeActiveLocked("reader", Process.myUid());
             }
         }
