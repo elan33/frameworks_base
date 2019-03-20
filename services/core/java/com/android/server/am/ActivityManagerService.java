@@ -2702,7 +2702,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                             pid = proc.pid;
                         } else {
                             ProcessList.abortNextPssTime(proc.procStateMemTracker);
-                            if (DEBUG_PSS) Slog.d(TAG_PSS, "Skipped pss collection of " + pid +
+                            if (DEBUG_PSS) Slog.d(TAG_PSS, "Skipped pss collection of " + proc.pid +
                                     ": still need " +
                                     (lastPssTime+ProcessList.PSS_SAFE_TIME_FROM_STATE_CHANGE-now) +
                                     "ms until safe");
@@ -12783,8 +12783,8 @@ public class ActivityManagerService extends IActivityManager.Stub
                     continue;
                 }
                 ContentProviderRecord dst = r.pubProviders.get(src.info.name);
-                if (DEBUG_MU) Slog.v(TAG_MU, "ContentProviderRecord uid = " + dst.uid);
                 if (dst != null) {
+                    if (DEBUG_MU) Slog.v(TAG_MU, "ContentProviderRecord uid = " + dst.uid);
                     ComponentName comp = new ComponentName(dst.info.packageName, dst.info.name);
                     mProviderMap.putProviderByClass(comp, dst);
                     String names[] = dst.info.authority.split(";");
