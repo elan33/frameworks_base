@@ -8266,6 +8266,26 @@ public final class Settings {
          */
         public static final String DOZE_ALWAYS_ON = "doze_always_on";
 
+
+        /**
+         * Whether doze should be always on.
+         * @hide
+         */
+        public static final String DOZE_CHARGER_ON = "doze_charger_on";
+
+
+        /**
+         * Whether doze should be always on.
+         * @hide
+         */
+        public static final String DOZE_CHARGER_NOW = "doze_charger_now";
+
+        /**
+         * Whether doze should be always on.
+         * @hide
+         */
+        public static final String DOZE_KEEP_NOTIFICATION = "doze_keep_notification";
+
         /**
          * Whether the device should pulse on pick up gesture.
          * @hide

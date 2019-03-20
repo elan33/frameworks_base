@@ -426,6 +426,12 @@ public class KeyguardIndicationController {
         boolean showbatteryInfo = Settings.System.getIntForUser(mContext.getContentResolver(),
             Settings.System.LOCKSCREEN_BATTERY_INFO, 1, UserHandle.USER_CURRENT) == 1;
          if (showbatteryInfo) {
+            if( mChargingSpeed == KeyguardUpdateMonitor.BatteryStatus.CHARGING_FAST ) {
+                batteryInfo += "\u26A1";
+            } else if(mChargingSpeed != KeyguardUpdateMonitor.BatteryStatus.CHARGING_SLOWLY ) {
+                batteryInfo += "\u26A1\uFE0E";
+            }
+
             if (mChargingCurrent > 0) {
                 batteryInfo = batteryInfo + (mChargingCurrent / 1000) + "mA";
             }

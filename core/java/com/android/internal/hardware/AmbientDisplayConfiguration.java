@@ -24,14 +24,18 @@ import android.os.SystemProperties;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import android.util.Log;
+
 public class AmbientDisplayConfiguration {
+
+    private static final String TAG = "AmbientDisplayConfiguration";
 
     private final Context mContext;
     private final boolean mAlwaysOnByDefault;
 
     public AmbientDisplayConfiguration(Context context) {
         mContext = context;
-        mAlwaysOnByDefault = mContext.getResources().getBoolean(R.bool.config_dozeAlwaysOnEnabled);
+        mAlwaysOnByDefault = false; // mContext.getResources().getBoolean(R.bool.config_dozeAlwaysOnEnabled);
     }
 
     public boolean enabled(int user) {
@@ -103,8 +107,9 @@ public class AmbientDisplayConfiguration {
     }
 
     public boolean alwaysOnEnabled(int user) {
-        return boolSetting(Settings.Secure.DOZE_ALWAYS_ON, user, mAlwaysOnByDefault ? 1 : 0)
-                && alwaysOnAvailable() && !accessibilityInversionEnabled(user);
+        boolean alwaysOn = alwaysOnEnabledSetting(user) ||  alwaysOnEnabledCharger(user);
+        Log.d(TAG, "alwaysOnEnabled=" + alwaysOn);
+        return alwaysOnEnabledSetting(user) ||  alwaysOnEnabledCharger(user);
     }
 
     public boolean alwaysOnAvailable() {
@@ -148,4 +153,16 @@ public class AmbientDisplayConfiguration {
     private boolean boolSetting(String name, int user, int def) {
         return Settings.Secure.getIntForUser(mContext.getContentResolver(), name, def, user) != 0;
     }
+
+    public boolean alwaysOnEnabledSetting(int user) {
+        return boolSetting(Settings.Secure.DOZE_ALWAYS_ON, user, mAlwaysOnByDefault ? 1 : 0)
+                && alwaysOnAvailable() && !accessibilityInversionEnabled(user);
+    }
+
+    public boolean alwaysOnEnabledCharger(int user) {
+        return boolSetting(Settings.Secure.DOZE_CHARGER_ON, user, mAlwaysOnByDefault ? 1 : 0) &&
+               boolSetting(Settings.Secure.DOZE_CHARGER_NOW, user, mAlwaysOnByDefault ? 1 : 0)
+                && alwaysOnAvailable() && !accessibilityInversionEnabled(user);
+    }
+
 }

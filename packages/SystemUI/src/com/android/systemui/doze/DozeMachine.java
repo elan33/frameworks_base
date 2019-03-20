@@ -42,7 +42,7 @@ import java.util.ArrayList;
 public class DozeMachine {
 
     static final String TAG = "DozeMachine";
-    static final boolean DEBUG = DozeService.DEBUG;
+    static final boolean DEBUG = true;
 
     public enum State {
         /** Default state. Transition to INITIALIZED to get Doze going. */
@@ -81,8 +81,9 @@ public class DozeMachine {
         boolean staysAwake() {
             switch (this) {
                 case DOZE_REQUEST_PULSE:
-                case DOZE_PULSING:
                     return true;
+                case DOZE_PULSING:
+                    return false;
                 default:
                     return false;
             }
@@ -99,7 +100,7 @@ public class DozeMachine {
                 case DOZE:
                     return Display.STATE_OFF;
                 case DOZE_PULSING:
-                    return Display.STATE_ON;
+                    return Display.STATE_DOZE_SUSPEND;
                 case DOZE_AOD:
                 case DOZE_AOD_PAUSING:
                     return Display.STATE_DOZE_SUSPEND;

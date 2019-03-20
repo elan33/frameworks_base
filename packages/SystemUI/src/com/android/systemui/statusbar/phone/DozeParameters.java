@@ -124,6 +124,9 @@ public class DozeParameters implements TunerService.Tunable {
     }
 
     public int getPulseVisibleDuration() {
+        if( Settings.Secure.getInt(mContext.getContentResolver(), Settings.Secure.DOZE_KEEP_NOTIFICATION, 0) == 1 )  {
+            return 12 * 60 * 60 * 1000;
+        } 
         return getInt("doze.pulse.duration.visible", R.integer.doze_pulse_duration_visible);
     }
 
@@ -173,7 +176,7 @@ public class DozeParameters implements TunerService.Tunable {
      * @return {@code true} if enabled and available.
      */
     public boolean getAlwaysOn() {
-        return mDozeAlwaysOn;
+        return mAmbientDisplayConfiguration.alwaysOnEnabled(UserHandle.USER_CURRENT);
     }
 
     /**
