@@ -1016,6 +1016,11 @@ public final class PowerManagerService extends SystemService
             mProximityWakeLock = ((PowerManager) mContext.getSystemService(Context.POWER_SERVICE))
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ProximityWakeLock");
         }
+
+
+        mReaderModeWakeLock = ((PowerManager) mContext.getSystemService(Context.POWER_SERVICE))
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "*cerberus_readermode*");
+
     }
 
     private void updateSettingsLocked() {
@@ -1447,6 +1452,9 @@ public final class PowerManagerService extends SystemService
                         mDirty |= DIRTY_QUIESCENT;
                     }
 
+                    lastInteractiveHint = SystemClock.elapsedRealtime();
+                    if( mReaderModeActive ) scheduleUpdatePowerState(1000);
+
                     return true;
                 }
             } else {
@@ -1456,6 +1464,10 @@ public final class PowerManagerService extends SystemService
                     if (event == PowerManager.USER_ACTIVITY_EVENT_BUTTON) {
                         mDirty |= DIRTY_QUIESCENT;
                     }
+
+                    lastInteractiveHint = SystemClock.elapsedRealtime();
+                    if( mReaderModeActive ) scheduleUpdatePowerState(1000);
+
                     return true;
                 }
             }
@@ -1477,6 +1489,10 @@ public final class PowerManagerService extends SystemService
         synchronized (mLock) {
             if (wakeUpNoUpdateLocked(eventTime, reason, uid, opPackageName, opUid)) {
                 updatePowerStateLocked();
+
+                lastInteractiveHint = SystemClock.elapsedRealtime();
+                if( mReaderModeActive ) scheduleUpdatePowerState(5000);
+
             }
         }
     }
@@ -1551,11 +1567,23 @@ public final class PowerManagerService extends SystemService
         if (DEBUG_SPEW) {
             Slog.d(TAG, "goToSleepNoUpdateLocked: eventTime=" + eventTime
                     + ", reason=" + reason + ", flags=" + flags + ", uid=" + uid);
+            Slog.d(TAG, "here:", new Throwable());
         }
+
+
+        if( mWakefulness == WAKEFULNESS_DOZING ) {
+            switch(reason) {
+                case PowerManager.GO_TO_SLEEP_REASON_LID_SWITCH:
+                    break;
+                default:
+                    return false;
+            }
+        }
+        
 
         if (eventTime < mLastWakeTime
                 || mWakefulness == WAKEFULNESS_ASLEEP
-                || mWakefulness == WAKEFULNESS_DOZING
+                /*|| mWakefulness == WAKEFULNESS_DOZING*/
                 || !mBootCompleted || !mSystemReady) {
             return false;
         }
@@ -1656,6 +1684,7 @@ public final class PowerManagerService extends SystemService
         if (DEBUG_SPEW) {
             Slog.d(TAG, "reallyGoToSleepNoUpdateLocked: eventTime=" + eventTime
                     + ", uid=" + uid);
+            Slog.d(TAG, "here ", new Throwable());
         }
 
         if (eventTime < mLastWakeTime || mWakefulness == WAKEFULNESS_ASLEEP
@@ -1884,6 +1913,19 @@ public final class PowerManagerService extends SystemService
                 final boolean dockedOnWirelessCharger = mWirelessChargerDetector.update(
                         mIsPowered, mPlugType);
 
+
+                Settings.Secure.putIntForUser(mContext.getContentResolver(),
+                            Settings.Secure.DOZE_CHARGER_NOW, mIsPowered ? 1 : 0,
+                            UserHandle.USER_CURRENT);
+
+
+
+                if( wasPowered != mIsPowered && (mWakefulness == WAKEFULNESS_ASLEEP || mWakefulness == WAKEFULNESS_DOZING ) ) {
+                    mSandmanSummoned = true;
+                    mWakefulness = WAKEFULNESS_AWAKE;
+                    setWakefulnessLocked(WAKEFULNESS_DOZING, 0);
+                }
+
                 // Treat plugging and unplugging the devices as a user activity.
                 // Users find it disconcerting when they plug or unplug the device
                 // and it shuts off right away.
@@ -2109,6 +2151,10 @@ public final class PowerManagerService extends SystemService
                         if (wakeLock.mAcquireTime < when) {
                             // This wake lock has exceeded the long acquire time, report!
                             notifyWakeLockLongStartedLocked(wakeLock);
+                            if( mDeviceIdleMode ) {
+                                wakeLock.mDisabled = true;
+                                updatePowerStateLocked();
+                            }
                         } else {
                             // This wake lock could still become a long one, at this time.
                             long checkTime = wakeLock.mAcquireTime + MIN_LONG_WAKE_CHECK_INTERVAL;
@@ -2222,12 +2268,12 @@ public final class PowerManagerService extends SystemService
                 mUserActivitySummary = 0;
             }
 
-            if (DEBUG_SPEW) {
+            //if (DEBUG_SPEW) {
                 Slog.d(TAG, "updateUserActivitySummaryLocked: mWakefulness="
                         + PowerManagerInternal.wakefulnessToString(mWakefulness)
                         + ", mUserActivitySummary=0x" + Integer.toHexString(mUserActivitySummary)
                         + ", nextTimeout=" + TimeUtils.formatUptime(nextTimeout));
-            }
+            //}
         }
     }
 
@@ -2315,7 +2361,7 @@ public final class PowerManagerService extends SystemService
                 | DIRTY_DOCK_STATE)) != 0) {
             if (mWakefulness == WAKEFULNESS_AWAKE && isItBedTimeYetLocked()) {
                 if (DEBUG_SPEW) {
-                    Slog.d(TAG, "updateWakefulnessLocked: Bed time...");
+                    Slog.d(TAG, "updateWakefulnessLocked: Bed time... userActivity=" + mUserActivitySummary);
                 }
                 final long time = SystemClock.uptimeMillis();
                 if (shouldNapAtBedTimeLocked()) {
@@ -2404,7 +2450,15 @@ public final class PowerManagerService extends SystemService
         // Handle preconditions.
         final boolean startDreaming;
         final int wakefulness;
+        final boolean forceStop;
         synchronized (mLock) {
+            if( DEBUG_SPEW ) {
+                Slog.i(TAG, "handleSandman mSandmanSummoned=" + mSandmanSummoned +  
+                        ", canDreamLocked=" + canDreamLocked() + 
+                        ", canDozeLocked=" + canDozeLocked() +
+                        ", mWakefulness=" + mWakefulness);
+            }
+            forceStop = mSandmanSummoned;
             mSandmanScheduled = false;
             wakefulness = mWakefulness;
             if (mSandmanSummoned && mDisplayReady) {
@@ -2422,12 +2476,18 @@ public final class PowerManagerService extends SystemService
         if (mDreamManager != null) {
             // Restart the dream whenever the sandman is summoned.
             if (startDreaming) {
-                mDreamManager.stopDream(false /*immediate*/);
+                mDreamManager.stopDream(forceStop /*immediate*/);
                 mDreamManager.startDream(wakefulness == WAKEFULNESS_DOZING);
             }
             isDreaming = mDreamManager.isDreaming();
+            if( DEBUG_SPEW ) {
+                Slog.i(TAG, "handleSandman isDreaming(1)=" + isDreaming);
+            }
         } else {
             isDreaming = false;
+            if( DEBUG_SPEW ) {
+                Slog.i(TAG, "handleSandman isDreaming(2)=" + isDreaming);
+            }
         }
 
         // Update dream state.
@@ -2436,15 +2496,18 @@ public final class PowerManagerService extends SystemService
             if (startDreaming && isDreaming) {
                 mBatteryLevelWhenDreamStarted = mBatteryLevel;
                 if (wakefulness == WAKEFULNESS_DOZING) {
-                    Slog.i(TAG, "Dozing...");
+                    Slog.i(TAG, "handleSandman Dozing...");
                 } else {
-                    Slog.i(TAG, "Dreaming...");
+                    Slog.i(TAG, "handleSandman Dreaming...");
                 }
             }
 
             // If preconditions changed, wait for the next iteration to determine
             // whether the dream should continue (or be restarted).
             if (mSandmanSummoned || mWakefulness != wakefulness) {
+                if( DEBUG_SPEW ) {
+                    Slog.i(TAG, "handleSandman wait for next cycle");
+                }
                 return; // wait for next cycle
             }
 
@@ -2464,6 +2527,7 @@ public final class PowerManagerService extends SystemService
                                 + mBatteryLevelWhenDreamStarted + "%.  "
                                 + "Battery level now: " + mBatteryLevel + "%.");
                     } else {
+                        Slog.i(TAG, "handleSandman Continue Dreaming...");
                         return; // continue dreaming
                     }
                 }
@@ -2480,9 +2544,11 @@ public final class PowerManagerService extends SystemService
                 }
             } else if (wakefulness == WAKEFULNESS_DOZING) {
                 if (isDreaming) {
+                    Slog.i(TAG, "handleSandman Continue Dozing...");
                     return; // continue dozing
                 }
 
+                Slog.i(TAG, "handleSandman reallyGoToSleepNoUpdateLocked");
                 // Doze has ended or will be stopped.  Update the power state.
                 reallyGoToSleepNoUpdateLocked(SystemClock.uptimeMillis(), Process.SYSTEM_UID);
                 updatePowerStateLocked();
@@ -2491,6 +2557,9 @@ public final class PowerManagerService extends SystemService
 
         // Stop dream.
         if (isDreaming) {
+            if( DEBUG_SPEW ) {
+                Slog.i(TAG, "handleSandman stopDream");
+            }
             mDreamManager.stopDream(false /*immediate*/);
         }
     }
@@ -2600,6 +2669,7 @@ public final class PowerManagerService extends SystemService
                 mDisplayPowerRequest.lowPowerMode = true;
             }
 
+
             if (mDisplayPowerRequest.policy == DisplayPowerRequest.POLICY_DOZE) {
                 mDisplayPowerRequest.dozeScreenState = mDozeScreenStateOverrideFromDreamManager;
                 if ((mWakeLockSummary & WAKE_LOCK_DRAW) != 0
@@ -2611,10 +2681,23 @@ public final class PowerManagerService extends SystemService
                         mDisplayPowerRequest.dozeScreenState = Display.STATE_ON;
                     }
                 }
-                mDisplayPowerRequest.dozeScreenBrightness =
-                        mDozeScreenBrightnessOverrideFromDreamManager;
+
+                if( mIsPowered ) {              
+                    mDisplayPowerRequest.useAutoBrightness = true;
+                    mDisplayPowerRequest.dozeScreenBrightness = -1;
+                } else {
+                    mDisplayPowerRequest.useAutoBrightness = false;
+                    mDisplayPowerRequest.dozeScreenBrightness =
+                            mDozeScreenBrightnessOverrideFromDreamManager;
+                }
             } else {
                 mDisplayPowerRequest.dozeScreenState = Display.STATE_UNKNOWN;
+                mDisplayPowerRequest.dozeScreenBrightness = PowerManager.BRIGHTNESS_DEFAULT;
+            }
+
+            if( mReaderModeActive ) {
+                mDisplayPowerRequest.policy = DisplayPowerRequest.POLICY_DOZE;
+                mDisplayPowerRequest.dozeScreenState = Display.STATE_DOZE;
                 mDisplayPowerRequest.dozeScreenBrightness = PowerManager.BRIGHTNESS_DEFAULT;
             }
 
@@ -2860,6 +2943,7 @@ public final class PowerManagerService extends SystemService
     }
 
 
+    PowerManager.WakeLock mReaderModeWakeLock;
     boolean mReaderModeActive = false;
     int mBrightnessOverrideFromCerberusService = -1;
     long lastInteractiveHint = 0;
@@ -2872,20 +2956,17 @@ public final class PowerManagerService extends SystemService
         if (!mDisplayReady) {
             return true;
         }
-        if (mDisplayPowerRequest.isBrightOrDim()) {
-           if( mReaderModeActive ) {
-                if( (SystemClock.elapsedRealtime() - lastInteractiveHint) > 1000 ) {
-                    return false;
-                } else {
-                    Slog.d(TAG, "ReaderMode blocked by user activity");
-                }
+        if (mDisplayPowerRequest.isBrightOrDim() || 
+            mDisplayPowerRequest.policy == DisplayPowerRequest.POLICY_DOZE ) {
+            if( mReaderModeActive ) {   
+                return false;
             }
             // If we asked for the screen to be on but it is off due to the proximity
             // sensor then we may suspend but only if the configuration allows it.
             // On some hardware it may not be safe to suspend because the proximity
             // sensor may not be correctly configured as a wake-up source.
             if (!mDisplayPowerRequest.useProximitySensor || !mProximityPositive
-                    || !mSuspendWhenScreenOffDueToProximityConfig) {
+                    || !mSuspendWhenScreenOffDueToProximityConfig ) {
                 return true;
             }
         }
@@ -2898,18 +2979,47 @@ public final class PowerManagerService extends SystemService
 
     private void handleUpdatePowerState() {
         synchronized (mLock) {
-            mHandler.removeMessages(MSG_UPDATE_POWERSTATE);
+            ReaderModeReleaseWakelock();
             updateSuspendBlockerLocked();
         }
     }
 
-    private void scheduleUpdatePowerState() {
-        mHandler.removeMessages(MSG_UPDATE_POWERSTATE);
-        Message msg = mHandler.obtainMessage(MSG_UPDATE_POWERSTATE);
-        msg.setAsynchronous(true);
-        mHandler.sendMessageDelayed(msg, 550);
+    private long mReaderModeDelayed = 0;
+
+    private void scheduleUpdatePowerState(int delay) {
+        if( DEBUG ) {
+            Slog.i(TAG,"mReaderModeWakeLock: scheduleUpdatePowerState=" + delay);
+        }
+        if( (SystemClock.elapsedRealtime() + delay) > mReaderModeDelayed ) {
+            ReaderModeAcquireWakelock();
+
+            mReaderModeDelayed = SystemClock.elapsedRealtime() + delay;
+            mHandler.removeMessages(MSG_UPDATE_POWERSTATE);
+            Message msg = mHandler.obtainMessage(MSG_UPDATE_POWERSTATE);
+            mHandler.sendMessageDelayed(msg, delay);
+        }
     }
 
+
+
+
+    private void ReaderModeReleaseWakelock() {
+        if (mReaderModeWakeLock.isHeld()) {
+            if( DEBUG ) {
+                Slog.i(TAG,"mReaderModeWakeLock: ReleaseWakelock()");
+            }
+            mReaderModeWakeLock.release();
+        }
+    }
+
+    private void ReaderModeAcquireWakelock() {
+        if (!mReaderModeWakeLock.isHeld()) {
+            if( DEBUG ) {
+                Slog.i(TAG,"mReaderModeWakeLock: AcquireWakelock()");
+            }
+            mReaderModeWakeLock.acquire();
+        }
+    }
 
 
     private void setHalAutoSuspendModeLocked(boolean enable) {
@@ -3275,7 +3385,7 @@ public final class PowerManagerService extends SystemService
                                     != ActivityManager.PROCESS_STATE_NONEXISTENT &&
                             wakeLock.mUidState.mProcState > ActivityManager.PROCESS_STATE_RECEIVER;
                 }
-                if (mDeviceIdleMode) {
+                if (mDeviceIdleMode || mReaderModeActive) {
                     // If we are in idle mode, we will also ignore all partial wake locks that are
                     // for application uids that are not whitelisted.
                     final UidState state = wakeLock.mUidState;
@@ -3440,22 +3550,6 @@ public final class PowerManagerService extends SystemService
 
     private void powerHintInternal(int hintId, int data) {
         // Maybe filter the event.
-
-        Slog.d(TAG, "PowerHint:" + hintId + ", data=" + data );
-        switch (hintId) {
-            case 2:
-                lastInteractiveHint = SystemClock.elapsedRealtime();
-                scheduleUpdatePowerState();
-                break;
-            case PowerHint.LAUNCH: // 1: activate launch boost 0: deactivate.
-                if (data == 1) {
-                    lastLaunchHint = SystemClock.elapsedRealtime();
-                    scheduleUpdatePowerState();
-                    return;
-                }
-                break;
-        }
-
         nativeSendPowerHint(hintId, data);
     }
 
@@ -4080,7 +4174,11 @@ public final class PowerManagerService extends SystemService
                     if( mReaderModeActive != readerModeActive ) {
                         Slog.d(TAG, "ReaderMode changed to " + readerModeActive);
                         mReaderModeActive = readerModeActive;
+
+                        lastInteractiveHint = SystemClock.elapsedRealtime();
                         updateDisplayPowerStateLocked(DIRTY_READER_MODE_CHANGED);
+                        scheduleUpdatePowerState(5000);
+
                     }
                 }
                 } catch(Exception exb){}

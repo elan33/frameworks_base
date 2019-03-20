@@ -21,6 +21,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.Trace;
+import android.os.SystemClock;
+
 import android.util.FloatProperty;
 import android.util.IntProperty;
 import android.util.Slog;
@@ -409,15 +411,24 @@ final class DisplayPowerState {
             }
         }
 
+        private int mHwActualState = INITIAL_SCREEN_STATE;
+        private int mBeforeDozeState = INITIAL_SCREEN_STATE;
+
         @Override
         public void run() {
             for (;;) {
                 // Get pending change.
                 final int state;
+                int hwState;
                 final boolean stateChanged;
                 final int backlight;
                 final boolean backlightChanged;
+                final int currState;
+                final int currHwState;
+                
                 synchronized (mLock) {
+                    currState = mActualState;
+                    currHwState = mHwActualState;
                     state = mPendingState;
                     stateChanged = (state != mActualState);
                     backlight = mPendingBacklight;
@@ -436,16 +447,60 @@ final class DisplayPowerState {
                         } catch (InterruptedException ex) { }
                         continue;
                     }
+    
+                    if( state != Display.STATE_DOZE && state != Display.STATE_DOZE_SUSPEND ) {
+                        mBeforeDozeState = state;
+                    }
+
+                    hwState = state;
+                    mHwActualState = hwState;
                     mActualState = state;
                     mActualBacklight = backlight;
                 }
 
                 // Apply pending change.
+
+                if( currHwState == Display.STATE_DOZE || currHwState == Display.STATE_DOZE_SUSPEND ) {
+                    if( hwState == Display.STATE_ON ) {
+                        if (DEBUG) {
+                            Slog.i(TAG, "Turning screen on from DOZE");
+                        }
+                        mBlanker.requestDisplayState(Display.STATE_OFF, backlight);
+                        SystemClock.sleep(100);
+                    } 
+                } 
+                if( currHwState == Display.STATE_OFF && ( hwState == Display.STATE_DOZE || hwState == Display.STATE_DOZE_SUSPEND ) ) { 
+                    if (DEBUG) {
+                        Slog.i(TAG, "Turning DOZE after OFF");
+                    }
+                    mBlanker.requestDisplayState(Display.STATE_ON, backlight);
+                    SystemClock.sleep(100);
+                }
+
+                
+                /*
+                if( (currHwState == Display.STATE_DOZE || currHwState == Display.STATE_DOZE_SUSPEND) &&
+                    (hwState != Display.STATE_DOZE &&  hwState != Display.STATE_DOZE_SUSPEND ) ) {
+
+                    Slog.d(TAG, "Updating screen state after doze: state="
+                            + Display.stateToString(mBeforeDozeState) + ", backlight=" + backlight);
+
+                    mBlanker.requestDisplayState(mBeforeDozeState, backlight);
+                    SystemClock.sleep(100);
+                } */
+
+
                 if (DEBUG) {
                     Slog.d(TAG, "Updating screen state: state="
-                            + Display.stateToString(state) + ", backlight=" + backlight);
+                            + Display.stateToString(hwState) + ", backlight=" + backlight);
                 }
-                mBlanker.requestDisplayState(state, backlight);
+
+                if( backlight == 0 && (hwState == Display.STATE_DOZE || hwState == Display.STATE_DOZE_SUSPEND) ) {
+                    hwState = Display.STATE_ON;
+                    mBlanker.requestDisplayState(hwState, backlight);
+                } else {
+                    mBlanker.requestDisplayState(hwState, backlight);
+                }
             }
         }
     }

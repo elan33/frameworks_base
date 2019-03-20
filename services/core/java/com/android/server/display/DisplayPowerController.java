@@ -768,9 +768,9 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
                 } else {
                     state = Display.STATE_DOZE;
                 }
-                if (!mAllowAutoBrightnessWhileDozingConfig) {
+                //if (!mAllowAutoBrightnessWhileDozingConfig) {
                     brightness = mPowerRequest.dozeScreenBrightness;
-                }
+                //}
                 break;
             case DisplayPowerRequest.POLICY_VR:
                 state = Display.STATE_VR;
@@ -838,7 +838,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
         }
 
         final boolean autoBrightnessEnabledInDoze =
-                mAllowAutoBrightnessWhileDozingConfig && Display.isDozeState(state);
+                /*mAllowAutoBrightnessWhileDozingConfig &&*/ Display.isDozeState(state);
         final boolean autoBrightnessEnabled = mPowerRequest.useAutoBrightness
                     && (state == Display.STATE_ON || autoBrightnessEnabledInDoze)
                     && brightness < 0
@@ -937,7 +937,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
         // Use default brightness when dozing unless overridden.
         if (brightness < 0 && Display.isDozeState(state)) {
-            brightness = mScreenBrightnessDozeConfig;
+            //brightness = mScreenBrightnessDozeConfig;
         }
 
         // Apply manual brightness.
