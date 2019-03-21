@@ -1339,12 +1339,13 @@ public class CerberusService extends SystemService {
 
 
     public boolean killByOOM(ProcessRecord app, ProcessRecord top_app, ProcessRecord home_app, ProcessRecord prev_app ) {
+        if( getWakefulnessLocked() == 1 ) return false;
         if( app.info.uid < Process.FIRST_APPLICATION_UID  ) return false;
+        if( !mIdleAggressive ) return false;
+        if( !mDeviceIdleMode ) return false;
         if( app == top_app ) return false;
         if( app == home_app ) return false;
         if( isGmsUid(app.info.uid) ) return false;
-        if( !mIdleAggressive ) return false;
-        if( !mDeviceIdleMode ) return false;
 
         if( !isAppRestricted(app.info.uid, app.info.packageName) ) return false;
 
@@ -1527,7 +1528,7 @@ public class CerberusService extends SystemService {
         }
 
         synchronized(mProfileSync) {
-            if( getWakefulnessLocked() == 0 ) {
+            if( getWakefulnessLocked() != 1 ) {
                 awakePerformanceProfile = mCurrentPerformanceProfile;
                 awakeThermalProfile = mCurrentThermalProfile;
                 setPerformanceProfile("battery");
@@ -1546,7 +1547,7 @@ public class CerberusService extends SystemService {
             if( DEBUG_PROFILE ) {
                 Slog.i(TAG,"topAppChanged: empty top activity");
             }
-            if( currentWakefulness != 0 ) {
+            if( currentWakefulness == 1 ) {
                 setPerformanceProfile("default");
                 setThermalProfile("default");
             }
@@ -1572,7 +1573,7 @@ public class CerberusService extends SystemService {
 
         currentUid = uid;    
         currentWakefulness = getWakefulnessLocked();
-        if( currentWakefulness == 0 ) {
+        if( currentWakefulness != 1 ) {
             return;
         }
 
