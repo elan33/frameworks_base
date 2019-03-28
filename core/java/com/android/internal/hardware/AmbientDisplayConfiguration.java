@@ -52,7 +52,9 @@ public class AmbientDisplayConfiguration {
     }
 
     public boolean pulseOnNotificationEnabled(int user) {
-        return boolSettingDefaultOn(Settings.Secure.DOZE_ENABLED, user) && pulseOnNotificationAvailable();
+        return (boolSettingDefaultOff(Settings.Secure.DOZE_ENABLED, user) 
+                || alwaysOnEnabled(user) )
+                && pulseOnNotificationAvailable();
     }
 
     public boolean pulseOnNotificationAvailable() {
