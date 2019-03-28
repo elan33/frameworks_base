@@ -2169,13 +2169,19 @@ public final class DisplayManagerService extends SystemService {
             synchronized (mSyncRoot) {
                 DisplayBlanker blanker = new DisplayBlanker() {
                     @Override
-                    public void requestDisplayState(int state, int brightness) {
+                    public void requestDisplayState(int state, int brightness, boolean report, int override) {
                         // The order of operations is important for legacy reasons.
                         if (state == Display.STATE_OFF) {
                             requestGlobalDisplayStateInternal(state, brightness);
                         }
 
-                        callbacks.onDisplayStateChange(state);
+                        if( report ) {
+                            if( override != -1 )  {
+                                callbacks.onDisplayStateChange(override);
+                            } else {
+                                callbacks.onDisplayStateChange(state);
+                            }
+                        }
 
                         if (state != Display.STATE_OFF) {
                             requestGlobalDisplayStateInternal(state, brightness);

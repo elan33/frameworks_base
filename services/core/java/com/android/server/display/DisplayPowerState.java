@@ -465,7 +465,7 @@ final class DisplayPowerState {
                         if (DEBUG) {
                             Slog.i(TAG, "Turning screen on from DOZE");
                         }
-                        mBlanker.requestDisplayState(Display.STATE_OFF, backlight);
+                        mBlanker.requestDisplayState(Display.STATE_OFF, backlight,false,-1);
                         SystemClock.sleep(100);
                     } 
                 } 
@@ -473,7 +473,7 @@ final class DisplayPowerState {
                     if (DEBUG) {
                         Slog.i(TAG, "Turning DOZE after OFF");
                     }
-                    mBlanker.requestDisplayState(Display.STATE_ON, backlight);
+                    mBlanker.requestDisplayState(Display.STATE_ON, backlight,false,-1);
                     SystemClock.sleep(100);
                 }
 
@@ -496,10 +496,10 @@ final class DisplayPowerState {
                 }
 
                 if( backlight == 0 && (hwState == Display.STATE_DOZE || hwState == Display.STATE_DOZE_SUSPEND) ) {
+                    mBlanker.requestDisplayState(Display.STATE_ON, backlight, true, hwState);
                     hwState = Display.STATE_ON;
-                    mBlanker.requestDisplayState(hwState, backlight);
                 } else {
-                    mBlanker.requestDisplayState(hwState, backlight);
+                    mBlanker.requestDisplayState(hwState, backlight, true, -1);
                 }
             }
         }
