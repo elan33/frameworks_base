@@ -2268,12 +2268,12 @@ public final class PowerManagerService extends SystemService
                 mUserActivitySummary = 0;
             }
 
-            //if (DEBUG_SPEW) {
+            if (DEBUG_SPEW) {
                 Slog.d(TAG, "updateUserActivitySummaryLocked: mWakefulness="
                         + PowerManagerInternal.wakefulnessToString(mWakefulness)
                         + ", mUserActivitySummary=0x" + Integer.toHexString(mUserActivitySummary)
                         + ", nextTimeout=" + TimeUtils.formatUptime(nextTimeout));
-            //}
+            }
         }
     }
 
@@ -2695,10 +2695,10 @@ public final class PowerManagerService extends SystemService
                 mDisplayPowerRequest.dozeScreenBrightness = PowerManager.BRIGHTNESS_DEFAULT;
             }
 
-            if( mReaderModeActive ) {
+            if( mReaderModeActive && mWakefulness == WAKEFULNESS_AWAKE ) {
                 mDisplayPowerRequest.policy = DisplayPowerRequest.POLICY_DOZE;
                 mDisplayPowerRequest.dozeScreenState = Display.STATE_DOZE;
-                mDisplayPowerRequest.dozeScreenBrightness = PowerManager.BRIGHTNESS_DEFAULT;
+                mDisplayPowerRequest.dozeScreenBrightness = -1;
             }
 
             onDisplayPowerRequest(mDisplayPowerRequest, mPrevDisplayPowerRequest); 
