@@ -9,6 +9,9 @@
   <java-symbol type="bool" name="config_deviceHasVariableButtonBrightness" />
   <java-symbol type="bool" name="config_supportCameraHAL1" />
 
+  <!-- Whether to cleanup fingerprints upon connection to the daemon and when user switches -->
+  <java-symbol type="bool" name="config_cleanupUnusedFingerprints" />
+
   <!-- display for radio tech -->
   <java-symbol type="bool" name="config_display_rat" />
    <!-- config 2G/3G/4G RAT strings for carriers -->
